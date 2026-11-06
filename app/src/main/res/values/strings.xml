@@ -1,0 +1,104 @@
+<resources>
+    <string name="app_name">CY Campus Explorer</string>
+
+    <!-- logo -->
+    <string name="logo_cy">CY</string>
+    <string name="logo_name">Campus Explorer</string>
+
+    <!-- barre de navigation -->
+    <string name="nav_home">Accueil</string>
+    <string name="nav_map">Carte</string>
+    <string name="nav_saved">Enregistrés</string>
+
+    <!-- accueil -->
+    <string name="home_badge">CAMPUS\nCERGY</string>
+    <string name="home_title">Explorez votre\ncampus</string>
+    <string name="home_subtitle">Découvrez les lieux essentiels de\nCY Cergy Paris Université.</string>
+    <string name="home_explore">Explorer la carte</string>
+    <string name="home_question">Que recherchez-vous ?</string>
+    <string name="home_discover">À découvrir</string>
+    <string name="home_see_all"><u>Tout voir</u></string>
+    <string name="home_saved">Mes lieux enregistrés</string>
+    <string name="place_number">%1$02d</string>
+
+    <!-- categories -->
+    <string name="cat_all">Tout</string>
+    <string name="cat_buildings">Bâtiments</string>
+    <string name="cat_library">Bibliothèque</string>
+    <string name="cat_food">Restauration</string>
+    <string name="cat_services">Services</string>
+    <string name="cat_services_long">Services étudiants</string>
+
+    <!-- carte -->
+    <string name="map_search_hint">Rechercher un lieu…</string>
+    <string name="map_clear_search">Effacer la recherche</string>
+    <string name="status_off">Localisation désactivée</string>
+    <string name="status_available">Position disponible</string>
+    <string name="status_tracking">Suivi en cours</string>
+    <string name="map_locate">Afficher ma position</string>
+    <string name="map_locate_link"><u>Afficher ma position</u></string>
+    <string name="map_zoom_in">Zoomer</string>
+    <string name="map_zoom_out">Dézoomer</string>
+    <string name="map_plus">+</string>
+    <string name="map_minus">−</string>
+    <string name="map_prompt">Activez la localisation pour afficher votre position.</string>
+    <string name="map_start_tracking">Démarrer le suivi</string>
+    <string name="map_offline">Pas de connexion : le fond de carte ne peut pas se charger. Les lieux du campus restent disponibles.</string>
+    <string name="map_no_place">Aucun lieu ne correspond à votre recherche.</string>
+
+    <!-- fiche d'un lieu -->
+    <string name="sheet_details">Voir les détails</string>
+    <string name="sheet_reduce">Réduire</string>
+    <string name="sheet_about">À propos de ce lieu</string>
+    <string name="sheet_close">Fermer la fiche</string>
+    <string name="sheet_save">Enregistrer ce lieu</string>
+    <string name="place_saved">Lieu enregistré.</string>
+    <string name="place_removed">Lieu retiré.</string>
+
+    <!-- panneau de suivi -->
+    <string name="tracking_label">SUIVI EN COURS</string>
+    <string name="tracking_distance">DISTANCE</string>
+    <string name="tracking_stop">Arrêter le suivi</string>
+    <string name="tracking_km">%1$.2f km</string>
+    <string name="tracking_finished">Parcours terminé.</string>
+
+    <!-- dialogues -->
+    <string name="dialog_location_title">Votre position</string>
+    <string name="dialog_location_text">Votre position est nécessaire pour afficher où vous êtes et enregistrer votre parcours sur le campus. Elle reste sur votre téléphone.</string>
+    <string name="dialog_continue">Continuer</string>
+    <string name="dialog_not_now">Pas maintenant</string>
+    <string name="dialog_stop_title">Arrêter le suivi ?</string>
+    <string name="dialog_stop_text">Voulez-vous terminer votre parcours actuel ?</string>
+    <string name="dialog_stop">Arrêter</string>
+    <string name="dialog_keep">Continuer le suivi</string>
+    <string name="permission_denied">Sans localisation, la carte montre seulement les lieux.</string>
+    <string name="permission_settings">Permission refusée : activez-la dans les paramètres de l\'appli.</string>
+    <string name="gps_off">La localisation du téléphone est désactivée.</string>
+
+    <!-- lieux enregistres -->
+    <string name="saved_title">Mes lieux\nenregistrés</string>
+    <string name="saved_subtitle">Retrouvez vos endroits préférés\net vos derniers parcours.</string>
+    <string name="saved_places">Mes lieux</string>
+    <plurals name="saved_count">
+        <item quantity="one">%d lieu</item>
+        <item quantity="other">%d lieux</item>
+    </plurals>
+    <string name="saved_see_on_map">Voir sur la carte</string>
+    <string name="saved_remove">Retirer %1$s</string>
+    <string name="saved_empty_title">Aucun lieu enregistré</string>
+    <string name="saved_empty_text">Enregistrez les endroits qui vous intéressent pour les retrouver facilement.</string>
+    <string name="saved_explore">Explorer la carte</string>
+    <string name="saved_history">Mes derniers parcours</string>
+    <string name="saved_history_empty">Aucun parcours pour l\'instant. Lancez « Démarrer le suivi » depuis la carte.</string>
+    <string name="session_title">Parcours du campus</string>
+    <string name="session_duration">%1$d min %2$02d s</string>
+    <string name="session_active_title">Suivi en cours</string>
+    <string name="session_active_text">Votre parcours est enregistré en arrière-plan.</string>
+
+    <!-- notification du service -->
+    <string name="channel_name">Suivi de parcours</string>
+    <string name="channel_description">Notification affichée pendant l\'enregistrement d\'un parcours.</string>
+    <string name="notif_title">Suivi de localisation actif</string>
+    <string name="notif_text">Votre parcours sur le campus est en cours d\'enregistrement.</string>
+    <string name="notif_stop">ARRÊTER</string>
+</resources>

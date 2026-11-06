@@ -1,0 +1,385 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Ecran 2 : la carte (MapScreen de la maquette).
+    La carte OpenStreetMap est une page Leaflet affichee dans une WebView (assets/map/index.html).
+    Tout le reste (recherche, filtres, boutons, fiche, panneau de suivi) est en vues Android
+    posees PAR-DESSUS la WebView, dans un FrameLayout : la vue ecrite en dernier est au-dessus.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    android:orientation="vertical"
+    tools:context=".MapActivity">
+
+    <!-- ===== barre du haut (.map-topbar) ===== -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="17dp"
+        android:paddingEnd="17dp">
+
+        <include layout="@layout/view_logo" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- pastille d'etat de la localisation (.location-status) -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_pill"
+            android:backgroundTint="@color/grey_soft"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="10dp"
+            android:paddingTop="7dp"
+            android:paddingEnd="10dp"
+            android:paddingBottom="7dp">
+
+            <View
+                android:id="@+id/status_dot"
+                android:layout_width="7dp"
+                android:layout_height="7dp"
+                android:background="@drawable/bg_oval"
+                android:backgroundTint="@color/dot_off" />
+
+            <TextView
+                android:id="@+id/status_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:fontFamily="@font/inter_medium"
+                android:text="@string/status_off"
+                android:textColor="@color/black"
+                android:textSize="10sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/line" />
+
+    <!-- ===== la scene de la carte (.map-stage) ===== -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="#E9E8E1">
+
+        <WebView
+            android:id="@+id/map_web"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- barre de recherche (.map-search) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginStart="14dp"
+                android:layout_marginTop="14dp"
+                android:layout_marginEnd="14dp"
+                android:background="@drawable/bg_round7"
+                android:elevation="6dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="14dp"
+                android:paddingEnd="6dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_search"
+                    app:tint="@color/black" />
+
+                <EditText
+                    android:id="@+id/search"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="9dp"
+                    android:layout_weight="1"
+                    android:autofillHints=""
+                    android:background="@null"
+                    android:hint="@string/map_search_hint"
+                    android:imeOptions="actionSearch"
+                    android:inputType="text"
+                    android:textColor="@color/black"
+                    android:textColorHint="@color/muted"
+                    android:textSize="14sp" />
+
+                <ImageView
+                    android:id="@+id/search_clear"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/map_clear_search"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_close"
+                    android:visibility="gone"
+                    app:tint="@color/black" />
+            </LinearLayout>
+
+            <!-- filtres (.filter-chips) : un RadioGroup garantit qu'un seul filtre est actif -->
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:clipToPadding="false"
+                android:overScrollMode="never"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:scrollbars="none">
+
+                <RadioGroup
+                    android:id="@+id/filters"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingBottom="4dp">
+
+                    <RadioButton
+                        android:id="@+id/filter_all"
+                        style="@style/FilterChip"
+                        android:checked="true"
+                        android:text="@string/cat_all" />
+
+                    <RadioButton
+                        android:id="@+id/filter_buildings"
+                        style="@style/FilterChip"
+                        android:text="@string/cat_buildings" />
+
+                    <RadioButton
+                        android:id="@+id/filter_library"
+                        style="@style/FilterChip"
+                        android:text="@string/cat_library" />
+
+                    <RadioButton
+                        android:id="@+id/filter_food"
+                        style="@style/FilterChip"
+                        android:text="@string/cat_food" />
+
+                    <RadioButton
+                        android:id="@+id/filter_services"
+                        style="@style/FilterChip"
+                        android:text="@string/cat_services" />
+                </RadioGroup>
+            </HorizontalScrollView>
+
+            <!-- message hors connexion (exige par la declaration : la carte reste utilisable) -->
+            <TextView
+                android:id="@+id/offline_banner"
+                style="@style/Text.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="14dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="68dp"
+                android:background="@drawable/bg_round7"
+                android:elevation="4dp"
+                android:padding="12dp"
+                android:text="@string/map_offline"
+                android:textColor="@color/black"
+                android:textSize="12sp"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <!-- boutons de la carte (.map-controls) -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end|top"
+            android:layout_marginTop="124dp"
+            android:layout_marginEnd="14dp"
+            android:orientation="vertical">
+
+            <ImageView
+                android:id="@+id/btn_locate"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/bg_oval"
+                android:backgroundTint="@color/black"
+                android:contentDescription="@string/map_locate"
+                android:elevation="5dp"
+                android:foreground="?attr/selectableItemBackgroundBorderless"
+                android:padding="10dp"
+                android:src="@drawable/ic_locate"
+                app:tint="@color/white" />
+
+            <TextView
+                android:id="@+id/btn_zoom_in"
+                style="@style/MapRoundButton"
+                android:layout_marginBottom="6dp"
+                android:contentDescription="@string/map_zoom_in"
+                android:text="@string/map_plus" />
+
+            <TextView
+                android:id="@+id/btn_zoom_out"
+                style="@style/MapRoundButton"
+                android:contentDescription="@string/map_zoom_out"
+                android:text="@string/map_minus" />
+        </LinearLayout>
+
+        <!-- invitation a activer la localisation (.location-prompt) -->
+        <LinearLayout
+            android:id="@+id/location_prompt"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:layout_marginStart="14dp"
+            android:layout_marginEnd="14dp"
+            android:layout_marginBottom="72dp"
+            android:background="@drawable/bg_round7"
+            android:elevation="6dp"
+            android:orientation="horizontal"
+            android:padding="12dp">
+
+            <FrameLayout
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:background="@drawable/bg_oval"
+                android:backgroundTint="@color/locate_soft">
+
+                <ImageView
+                    android:layout_width="19dp"
+                    android:layout_height="19dp"
+                    android:layout_gravity="center"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_locate"
+                    app:tint="@color/locate_icon" />
+            </FrameLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="@string/map_prompt"
+                    android:textColor="@color/black"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/btn_prompt_locate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:fontFamily="@font/inter_extrabold"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="4dp"
+                    android:text="@string/map_locate_link"
+                    android:textColor="@color/black"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- bouton "Demarrer le suivi" (.start-tracking) -->
+        <LinearLayout
+            android:id="@+id/btn_start_tracking"
+            android:layout_width="wrap_content"
+            android:layout_height="46dp"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="14dp"
+            android:background="@drawable/bg_pill"
+            android:backgroundTint="@color/black"
+            android:clickable="true"
+            android:elevation="8dp"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_route"
+                app:tint="@color/white" />
+
+            <TextView
+                style="@style/Text.Button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="@string/map_start_tracking"
+                android:textColor="@color/white" />
+        </LinearLayout>
+
+        <include
+            android:id="@+id/tracking_panel"
+            layout="@layout/view_tracking_panel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:layout_margin="12dp"
+            android:visibility="gone" />
+
+        <include
+            android:id="@+id/place_sheet"
+            layout="@layout/view_place_sheet"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:visibility="gone" />
+
+        <!-- petit message noir avec une coche (.toast). Elevation 24dp : au-dessus de la fiche (16dp),
+             car sur Android c'est l'elevation, plus que l'ordre du XML, qui decide qui passe devant -->
+        <LinearLayout
+            android:id="@+id/toast"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="86dp"
+            android:alpha="0"
+            android:background="@drawable/bg_round5"
+            android:backgroundTint="@color/black"
+            android:elevation="24dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="17dp"
+            android:paddingTop="11dp"
+            android:paddingEnd="17dp"
+            android:paddingBottom="11dp">
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_check"
+                app:tint="@color/white" />
+
+            <TextView
+                android:id="@+id/toast_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="7dp"
+                android:fontFamily="@font/inter_semibold"
+                android:textColor="@color/white"
+                android:textSize="13sp" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <include layout="@layout/view_bottom_nav" />
+</LinearLayout>

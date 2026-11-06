@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Barre du bas commune aux 3 ecrans (.bottom-nav). Chaque Activity l'inclut avec <include>,
+    puis BottomNav.setup() remplit les onglets, marque l'onglet actif et branche les clics.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/bottom_nav"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/white"
+    android:orientation="vertical">
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/nav_line" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="68dp"
+        android:orientation="horizontal">
+
+        <include
+            android:id="@+id/nav_home"
+            layout="@layout/view_nav_item" />
+
+        <include
+            android:id="@+id/nav_map"
+            layout="@layout/view_nav_item" />
+
+        <include
+            android:id="@+id/nav_saved"
+            layout="@layout/view_nav_item" />
+    </LinearLayout>
+</LinearLayout>

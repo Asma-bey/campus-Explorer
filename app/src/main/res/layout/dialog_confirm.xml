@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Dialogue de la maquette (.dialog) : pastille ronde, titre, texte, bouton noir, bouton texte.
+    Sert pour "Votre position" et pour "Arreter le suivi ?" (Dialogs.java remplit les textes).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_round11"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <FrameLayout
+        android:id="@+id/dialog_icon_box"
+        android:layout_width="54dp"
+        android:layout_height="54dp"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/bg_oval"
+        android:backgroundTint="@color/dialog_icon_bg">
+
+        <ImageView
+            android:id="@+id/dialog_icon"
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:layout_gravity="center"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_locate"
+            app:tint="@color/dialog_icon" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/dialog_title"
+        style="@style/Text.SectionTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="21sp" />
+
+    <TextView
+        android:id="@+id/dialog_text"
+        style="@style/Text.Body"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="20dp"
+        android:gravity="center" />
+
+    <TextView
+        android:id="@+id/dialog_primary"
+        style="@style/Text.Button"
+        android:layout_width="match_parent"
+        android:layout_height="46dp"
+        android:background="@drawable/bg_round5"
+        android:backgroundTint="@color/black"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground"
+        android:gravity="center"
+        android:textColor="@color/white" />
+
+    <TextView
+        android:id="@+id/dialog_secondary"
+        style="@style/Text.Button"
+        android:layout_width="match_parent"
+        android:layout_height="46dp"
+        android:layout_marginTop="5dp"
+        android:background="?attr/selectableItemBackground"
+        android:gravity="center" />
+</LinearLayout>
