@@ -1,8 +1,5 @@
 # CY Campus Explorer
 
-Asma BACHIR BEY and Patrick-Léon GANDONOU, L3 Informatique, CY Cergy Paris Université  
-Mobile Computing, project
-
 Campus Explorer helps students find their way around the CY Cergy campus. It shows a map with the
 main places (teaching sites, university library, university restaurant, student house), displays
 the user's position, and can record a walk as a tracking session that keeps running in the
