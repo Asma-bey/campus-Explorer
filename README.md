@@ -81,6 +81,21 @@ Tested on the emulator (API 37): permission dialog, denied permission, position 
 simulated walk of 660 m with the app in the background (`MapActivity.onStop`, service still in
 the foreground), stop from the notification, session in the history, map without network.
 
+## Languages
+
+The app follows the phone language: French when the phone is in French, English otherwise.
+
+- `res/values/` holds the default texts, in English; `res/values-fr/` holds the French ones. Android
+  picks the folder that matches the phone language, with no code.
+- The texts of the places are resources too (`places.xml` in both folders): `Place` stores
+  `@StringRes` ids, resolved with `getString()` when they are displayed.
+- Dates (`DateFormat.getDateTimeInstance`) and distances (`getString(R.string.tracking_km, ...)`)
+  use the phone's formats: "6 novembre 2026 17:53" and "0,66 km" in French, "November 6, 2026 5:53 PM"
+  and "0.66 km" in English. Only the coordinates sent to JavaScript always use `Locale.US`, because
+  JavaScript needs a decimal point.
+- On Android 13+, `res/xml/locales_config.xml` lets the user pick the app language alone, in
+  **Settings > Apps > CY Campus Explorer > Language**.
+
 ## Design
 
 The interface follows the Figma prototype (`design/`): the same colors (`res/values/colors.xml`

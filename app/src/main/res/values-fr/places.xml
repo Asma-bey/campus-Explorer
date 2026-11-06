@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Textes des lieux en francais (anglais : values/places.xml). Coordonnees : Places.java -->
+<resources>
+    <string name="type_library">Bibliothèque</string>
+    <string name="type_food">Restauration</string>
+    <string name="type_building">Bâtiment</string>
+    <string name="type_service">Service étudiant</string>
+
+    <string name="place1_name">Bibliothèque universitaire</string>
+    <string name="place1_description">Un espace dédié au travail, à la lecture et à l\'étude.</string>
+    <string name="place1_details">La bibliothèque universitaire des Cerclades, place des Cerclades, à côté de la gare de Cergy-Préfecture. Salles de travail en groupe et places de lecture.</string>
+
+    <string name="place2_name">Restaurant universitaire</string>
+    <string name="place2_description">Une pause conviviale pour déjeuner entre deux cours.</string>
+    <string name="place2_details">Le restaurant universitaire du Crous, 5 avenue du Parc. Repas à tarif étudiant le midi, en semaine.</string>
+
+    <string name="place3_name">Bâtiment d\'enseignement</string>
+    <string name="place3_description">Salles de cours et espaces pédagogiques du campus.</string>
+    <string name="place3_details">Le site des Chênes, 33 boulevard du Port : amphithéâtres, salles de TD et salles informatiques.</string>
+
+    <string name="place4_name">Maison des étudiants</string>
+    <string name="place4_description">Informations, accompagnement et vie associative.</string>
+    <string name="place4_details">La Maison des étudiants, boulevard du Port, juste au sud du site des Chênes. Accueil, associations étudiantes et informations sur la vie du campus.</string>
+
+    <string name="place5_name">Site de Saint-Martin</string>
+    <string name="place5_description">Un autre site d\'enseignement, près de la place Adolphe Chauvin.</string>
+    <string name="place5_details">Le site de Saint-Martin, 2 avenue François Mitterrand, à Pontoise.</string>
+
+    <string name="place6_name">Site Bernard Hirsch</string>
+    <string name="place6_description">Le site de l\'avenue Bernard Hirsch, avec l\'INSPE.</string>
+    <string name="place6_details">Le site Bernard Hirsch, avenue Bernard Hirsch, au sud du parc François Mitterrand.</string>
+
+    <string name="place7_name">Résidence Crous</string>
+    <string name="place7_description">Logement étudiant et accueil du Crous.</string>
+    <string name="place7_details">La résidence Crous Les Châteaux Saint-Sylvère, boulevard de l\'Hautil. Logement et informations sur la vie étudiante.</string>
+</resources>

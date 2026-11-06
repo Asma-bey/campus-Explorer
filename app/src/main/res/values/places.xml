@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Texts of the predefined places, in English (French: values-fr/places.xml). Coordinates: Places.java -->
+<resources>
+    <string name="type_library">Library</string>
+    <string name="type_food">Food</string>
+    <string name="type_building">Building</string>
+    <string name="type_service">Student service</string>
+
+    <string name="place1_name">University library</string>
+    <string name="place1_description">A space for work, reading and study.</string>
+    <string name="place1_details">The Cerclades university library, place des Cerclades, next to Cergy-Préfecture station. Group work rooms and reading seats.</string>
+
+    <string name="place2_name">University restaurant</string>
+    <string name="place2_description">A friendly lunch break between two classes.</string>
+    <string name="place2_details">The Crous university restaurant, 5 avenue du Parc. Meals at student prices at lunchtime, on weekdays.</string>
+
+    <string name="place3_name">Teaching building</string>
+    <string name="place3_description">Classrooms and teaching spaces of the campus.</string>
+    <string name="place3_details">The Chênes site, 33 boulevard du Port: lecture halls, tutorial rooms and computer rooms.</string>
+
+    <string name="place4_name">Student house</string>
+    <string name="place4_description">Information, support and student associations.</string>
+    <string name="place4_details">The Maison des étudiants, boulevard du Port, just south of the Chênes site. Welcome desk, student associations and information about campus life.</string>
+
+    <string name="place5_name">Saint-Martin site</string>
+    <string name="place5_description">Another teaching site, near place Adolphe Chauvin.</string>
+    <string name="place5_details">The Saint-Martin site, 2 avenue François Mitterrand, in Pontoise.</string>
+
+    <string name="place6_name">Bernard Hirsch site</string>
+    <string name="place6_description">The site on avenue Bernard Hirsch, with the INSPE.</string>
+    <string name="place6_details">The Bernard Hirsch site, avenue Bernard Hirsch, south of the François Mitterrand park.</string>
+
+    <string name="place7_name">Crous residence</string>
+    <string name="place7_description">Student housing and Crous welcome desk.</string>
+    <string name="place7_details">The Crous residence Les Châteaux Saint-Sylvère, boulevard de l\'Hautil. Housing and information about student life.</string>
+</resources>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Langues proposees par l'appli. Android 13+ les affiche dans
+    Parametres > Applis > CY Campus Explorer > Langue : on peut choisir la langue de l'appli
+    sans changer celle du telephone.
+-->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="en" />
+    <locale android:name="fr" />
+</locale-config>

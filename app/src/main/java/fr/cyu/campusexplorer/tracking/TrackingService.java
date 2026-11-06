@@ -26,8 +26,6 @@ import androidx.core.app.NotificationCompat;
 import androidx.core.app.ServiceCompat;
 import androidx.core.content.ContextCompat;
 
-import java.util.Locale;
-
 import fr.cyu.campusexplorer.MapActivity;
 import fr.cyu.campusexplorer.R;
 import fr.cyu.campusexplorer.data.SessionDb;
@@ -231,7 +229,8 @@ public class TrackingService extends Service {
         PendingIntent stopPending = PendingIntent.getService(this, 1, stop,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
-        String distance = String.format(Locale.FRANCE, "%.2f km", TrackingState.distanceMeters() / 1000);
+        // "0,66 km" en francais, "0.66 km" en anglais : getString suit la langue du telephone
+        String distance = getString(R.string.tracking_km, TrackingState.distanceMeters() / 1000);
         // chrono de la notification : on donne l'heure murale du depart
         long startWall = System.currentTimeMillis()
                 - (SystemClock.elapsedRealtime() - TrackingState.startElapsed());

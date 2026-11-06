@@ -320,7 +320,7 @@ public class MapActivity extends BaseActivity {
             for (Place p : Places.all()) {
                 array.put(new JSONObject()
                         .put("id", p.id)
-                        .put("name", p.name)
+                        .put("name", getString(p.name))
                         .put("cat", p.category.key)
                         .put("lat", p.lat)
                         .put("lng", p.lng));
@@ -386,11 +386,12 @@ public class MapActivity extends BaseActivity {
     }
 
     private List<Place> matchingPlaces() {
-        String q = search.getText().toString().toLowerCase(Locale.FRANCE);
+        Locale locale = Locale.getDefault();
+        String q = search.getText().toString().toLowerCase(locale);
         List<Place> result = new ArrayList<>();
         for (Place p : Places.all()) {
             boolean inCategory = currentCategory.equals("all") || p.category.key.equals(currentCategory);
-            if (inCategory && p.name.toLowerCase(Locale.FRANCE).contains(q)) result.add(p);
+            if (inCategory && getString(p.name).toLowerCase(locale).contains(q)) result.add(p);
         }
         return result;
     }

@@ -2,6 +2,7 @@ package fr.cyu.campusexplorer.data;
 
 import androidx.annotation.ColorRes;
 import androidx.annotation.DrawableRes;
+import androidx.annotation.StringRes;
 
 import fr.cyu.campusexplorer.R;
 
@@ -34,18 +35,23 @@ public class Place {
     }
 
     public final int id;
-    public final String name;
+    /*
+     * Les textes sont des identifiants de ressources (R.string...), pas des String :
+     * getString() les traduit au moment de l'affichage, dans la langue du telephone
+     * (values/places.xml en anglais, values-fr/places.xml en francais).
+     */
+    @StringRes public final int name;
     public final Category category;
     /** petit libelle au-dessus du nom, en majuscules dans l'interface */
-    public final String shortCategory;
-    public final String description;
+    @StringRes public final int shortCategory;
+    @StringRes public final int description;
     /** texte affiche par "Voir les details" */
-    public final String details;
+    @StringRes public final int details;
     public final double lat;
     public final double lng;
 
-    public Place(int id, String name, Category category, String shortCategory,
-                 String description, String details, double lat, double lng) {
+    public Place(int id, @StringRes int name, Category category, @StringRes int shortCategory,
+                 @StringRes int description, @StringRes int details, double lat, double lng) {
         this.id = id;
         this.name = name;
         this.category = category;

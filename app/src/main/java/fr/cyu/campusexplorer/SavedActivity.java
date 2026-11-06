@@ -9,10 +9,9 @@ import android.widget.TextView;
 
 import androidx.core.content.ContextCompat;
 
-import java.text.SimpleDateFormat;
+import java.text.DateFormat;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 
 import fr.cyu.campusexplorer.data.Place;
 import fr.cyu.campusexplorer.data.Places;
@@ -87,7 +86,7 @@ public class SavedActivity extends BaseActivity {
             });
 
             View remove = item.findViewById(R.id.saved_remove);
-            remove.setContentDescription(getString(R.string.saved_remove, place.name));
+            remove.setContentDescription(getString(R.string.saved_remove, getString(place.name)));
             remove.setOnClickListener(v -> {
                 savedPlaces.remove(place.id);
                 showSavedPlaces();
@@ -102,7 +101,8 @@ public class SavedActivity extends BaseActivity {
         list.removeAllViews();
         findViewById(R.id.history_empty).setVisibility(sessions.isEmpty() ? View.VISIBLE : View.GONE);
 
-        SimpleDateFormat format = new SimpleDateFormat("dd MMMM yyyy · HH:mm", Locale.FRANCE);
+        // format de date de la langue du telephone : "6 novembre 2026 18:02" ou "November 6, 2026 6:02 PM"
+        DateFormat format = DateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.SHORT);
         for (SessionDb.Session session : sessions) {
             View item = getLayoutInflater().inflate(R.layout.item_session, list, false);
             ((TextView) item.findViewById(R.id.session_date)).setText(format.format(new Date(session.startTime)));
