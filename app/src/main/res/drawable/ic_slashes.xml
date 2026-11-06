@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Les trois barres obliques de la maquette (.slashes) : 4 de large, 21 de haut,
+    4 d'ecart, inclinees de 20 degres (21 x tan 20 = 7.64). Couleur reglee par app:tint.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="28dp"
+    android:height="21dp"
+    android:viewportWidth="27.64"
+    android:viewportHeight="21">
+    <path android:fillColor="#FF000000" android:pathData="M7.64,0 h4 l-7.64,21 h-4 Z" />
+    <path android:fillColor="#FF000000" android:pathData="M15.64,0 h4 l-7.64,21 h-4 Z" />
+    <path android:fillColor="#FF000000" android:pathData="M23.64,0 h4 l-7.64,21 h-4 Z" />
+</vector>

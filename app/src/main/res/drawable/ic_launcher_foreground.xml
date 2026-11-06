@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Premier plan de l'icone : l'epingle de ic_pin.xml, agrandie 2,2 fois et centree
+    dans la zone visible (66dp au centre des 108dp d'une icone adaptative).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="2.2"
+        android:scaleY="2.2"
+        android:translateX="27.6"
+        android:translateY="28.4">
+        <path
+            android:pathData="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"
+            android:strokeColor="#FF090909"
+            android:strokeWidth="1.9"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M9.6,10 a2.4,2.4 0 1,0 4.8,0 a2.4,2.4 0 1,0 -4.8,0"
+            android:strokeColor="#FF090909"
+            android:strokeWidth="1.9" />
+    </group>
+</vector>

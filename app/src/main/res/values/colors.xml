@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Palette reprise telle quelle de la maquette Figma (src/index.css, :root) -->
+<resources>
+    <!-- les 4 couleurs de la marque -->
+    <color name="yellow">#FFE500</color>
+    <color name="black">#090909</color>
+    <color name="cyan">#50C6E5</color>
+    <color name="green">#69B72E</color>
+
+    <!-- fonds et traits -->
+    <color name="white">#FFFFFF</color>
+    <color name="paper">#F5F5F2</color>
+    <color name="paper_saved">#F7F7F4</color>
+    <color name="line">#E4E4DF</color>
+    <color name="nav_line">#EBEBE8</color>
+    <color name="muted">#777777</color>
+    <color name="nav_inactive">#A1A19D</color>
+    <color name="hero_text">#413E16</color>
+    <color name="chip_border">#DEDED9</color>
+    <color name="grey_soft">#F1F1EE</color>
+    <color name="dot_off">#A8A8A2</color>
+
+    <!-- fonds pastel des pastilles (categories, numeros, lieux enregistres) -->
+    <color name="cyan_soft">#DFF5FA</color>
+    <color name="yellow_soft">#FFF9C4</color>
+    <color name="green_soft">#E8F4DD</color>
+    <color name="number_green">#DFF3DC</color>
+    <color name="number_cyan">#DBF3F9</color>
+    <color name="saved_yellow">#FFF4A7</color>
+    <color name="saved_green">#DCF1D1</color>
+    <color name="saved_cyan">#D9F2F8</color>
+    <color name="locate_soft">#E3F6FB</color>
+    <color name="locate_icon">#2298B8</color>
+    <color name="dialog_icon">#138BAB</color>
+    <color name="dialog_icon_bg">#E1F5FA</color>
+    <color name="stop_icon_bg">#FFF5BD</color>
+    <color name="empty_icon_bg">#FFF9C9</color>
+
+    <!-- bandeau "suivi en cours" de l'ecran Enregistres -->
+    <color name="session_bg">#EDF7E7</color>
+    <color name="session_border">#C6E3B3</color>
+    <color name="session_title">#28421A</color>
+    <color name="session_text">#62804E</color>
+
+    <!-- panneau de suivi (fond noir) -->
+    <color name="tracking_label">#AAAAAA</color>
+    <color name="tracking_divider">#444444</color>
+    <color name="tracking_button_border">#666666</color>
+    <color name="history_small">#8E8E8E</color>
+
+    <color name="shadow_cyan">#BF50C6E5</color>
+</resources>

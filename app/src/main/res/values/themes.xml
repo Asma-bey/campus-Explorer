@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Pas de barre d'action : chaque ecran dessine son propre en-tete, comme dans la maquette -->
+    <style name="Theme.CampusExplorer" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">@color/black</item>
+        <item name="colorPrimaryVariant">@color/black</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSecondary">@color/yellow</item>
+        <item name="colorOnSecondary">@color/black</item>
+        <item name="android:colorBackground">@color/white</item>
+        <item name="android:windowBackground">@color/white</item>
+        <!-- Seulement android:fontFamily. L'attribut "fontFamily" d'AppCompat, s'il etait mis ici,
+             passerait avant le android:fontFamily de chaque vue : tout le texte serait en Regular. -->
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:textColor">@color/black</item>
+        <item name="android:statusBarColor">@color/white</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:navigationBarColor">@color/white</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
+    </style>
+
+    <!-- l'accueil a une barre d'etat jaune, comme le haut de l'ecran -->
+    <style name="Theme.CampusExplorer.Home">
+        <item name="android:statusBarColor">@color/yellow</item>
+        <!-- ecran de lancement d'Android 12+ : fond jaune et epingle, comme l'icone -->
+        <item name="android:windowSplashScreenBackground" tools:targetApi="31">@color/yellow</item>
+        <item name="android:windowSplashScreenAnimatedIcon" tools:targetApi="31">@drawable/ic_launcher_foreground</item>
+    </style>
+
+    <!-- ===== styles de texte (tailles de la maquette x1,3 environ, minimum 10sp pour rester lisible) ===== -->
+    <style name="Text" parent="">
+        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:textColor">@color/black</item>
+    </style>
+    <style name="Text.Display">
+        <item name="android:textSize">40sp</item>
+        <item name="android:fontFamily">@font/inter_bold</item>
+        <item name="android:letterSpacing">-0.06</item>
+        <item name="android:lineSpacingMultiplier">0.92</item>
+    </style>
+    <style name="Text.SectionTitle">
+        <item name="android:textSize">20sp</item>
+        <item name="android:fontFamily">@font/inter_bold</item>
+        <item name="android:letterSpacing">-0.04</item>
+    </style>
+    <style name="Text.Title">
+        <item name="android:textSize">14sp</item>
+        <item name="android:fontFamily">@font/inter_bold</item>
+    </style>
+    <style name="Text.Body">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/muted</item>
+        <item name="android:lineSpacingMultiplier">1.2</item>
+    </style>
+    <style name="Text.Caption">
+        <item name="android:textSize">10sp</item>
+        <item name="android:textColor">@color/muted</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.1</item>
+        <item name="android:fontFamily">@font/inter_medium</item>
+    </style>
+    <!-- une puce de filtre de la carte (.filter-chips button) : RadioButton sans le rond -->
+    <style name="FilterChip">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">34dp</item>
+        <item name="android:layout_marginEnd">6dp</item>
+        <item name="android:background">@drawable/bg_chip</item>
+        <item name="android:button">@null</item>
+        <item name="android:elevation">2dp</item>
+        <item name="android:fontFamily">@font/inter_semibold</item>
+        <item name="android:gravity">center</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">14dp</item>
+        <item name="android:textColor">@color/chip_text</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <!-- boutons ronds blancs + et - de la carte (.map-controls button) -->
+    <style name="MapRoundButton">
+        <item name="android:layout_width">42dp</item>
+        <item name="android:layout_height">42dp</item>
+        <item name="android:background">@drawable/bg_oval</item>
+        <item name="android:clickable">true</item>
+        <item name="android:elevation">5dp</item>
+        <item name="android:focusable">true</item>
+        <item name="android:foreground">?attr/selectableItemBackgroundBorderless</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/black</item>
+        <item name="android:textSize">22sp</item>
+    </style>
+
+    <style name="Text.Button">
+        <item name="android:textSize">13sp</item>
+        <item name="android:fontFamily">@font/inter_bold</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+</resources>

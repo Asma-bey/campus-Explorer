@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icone "book" de la maquette (trait 1.8, bouts arrondis). Couleur reglee par app:tint -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M4 4c3-1 6 0 8 2v15c-2-2-5-3-8-2ZM20 4c-3-1-6 0-8 2v15c2-2 5-3 8-2Z"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>
