@@ -1,0 +1,81 @@
+/* Styles de la carte, repris de la maquette Figma (.map-marker, .user-location, .map-credit) */
+
+html, body, #map {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background: #e9e8e1;
+    font-family: sans-serif;
+}
+
+/* Les tuiles OpenStreetMap sont tres colorees ; la maquette est sourde (gris, vert pale).
+   Un filtre CSS les rapproche du rendu de la maquette sans changer de fournisseur de tuiles. */
+.osm-tiles {
+    filter: grayscale(0.6) saturate(0.85) brightness(1.04) contrast(0.92);
+}
+
+/* ----- marqueurs : goutte = carre arrondi sauf un coin, tourne de -45 degres ----- */
+.place-marker {
+    background: transparent;
+    border: 0;
+}
+.place-marker .pin {
+    width: 36px;
+    height: 36px;
+    box-sizing: border-box;
+    border-radius: 50% 50% 50% 8px;
+    border: 3px solid #fff;
+    transform: rotate(-45deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.24);
+    color: #090909;
+    transition: width 0.15s, height 0.15s;
+}
+.place-marker .pin svg {
+    transform: rotate(45deg);
+}
+.place-marker.selected .pin {
+    width: 44px;
+    height: 44px;
+    box-shadow: 0 0 0 5px rgba(0, 0, 0, 0.15), 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+.cat-library .pin  { background: #ffe500; }
+.cat-food .pin     { background: #69b72e; }
+.cat-buildings .pin { background: #090909; color: #fff; }
+.cat-services .pin { background: #50c6e5; }
+
+/* ----- position de l'utilisateur : point bleu dans un halo cyan ----- */
+.user-location {
+    background: transparent;
+    border: 0;
+}
+.user-location .halo {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(80, 198, 229, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.user-location .dot {
+    width: 16px;
+    height: 16px;
+    border: 4px solid #fff;
+    border-radius: 50%;
+    background: #1688e8;
+    box-shadow: 0 2px 7px rgba(0, 0, 0, 0.25);
+}
+
+/* ----- attribution OpenStreetMap, petite, en bas a droite (obligatoire) ----- */
+.leaflet-control-attribution {
+    font-size: 9px;
+    background: rgba(255, 255, 255, 0.7) !important;
+    color: #777;
+}
+.leaflet-control-attribution a {
+    color: #555;
+}
