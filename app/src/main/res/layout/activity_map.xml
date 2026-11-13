@@ -85,8 +85,20 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
+            <!-- guidage vers un lieu : remplace la recherche et les filtres pendant le trajet -->
+            <include
+                android:id="@+id/guidance_panel"
+                layout="@layout/view_guidance_panel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="14dp"
+                android:layout_marginTop="14dp"
+                android:layout_marginEnd="14dp"
+                android:visibility="gone" />
+
             <!-- barre de recherche (.map-search) -->
             <LinearLayout
+                android:id="@+id/search_bar"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
                 android:layout_marginStart="14dp"
@@ -133,8 +145,25 @@
                     app:tint="@color/black" />
             </LinearLayout>
 
+            <!-- suggestions pendant la frappe, remplies par MapActivity.showSuggestions.
+                 Elevation 8dp : au-dessus des boutons de la carte (5dp) -->
+            <LinearLayout
+                android:id="@+id/search_suggestions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="14dp"
+                android:layout_marginTop="6dp"
+                android:layout_marginEnd="14dp"
+                android:background="@drawable/bg_round7"
+                android:elevation="8dp"
+                android:orientation="vertical"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:visibility="gone" />
+
             <!-- filtres (.filter-chips) : un RadioGroup garantit qu'un seul filtre est actif -->
             <HorizontalScrollView
+                android:id="@+id/filters_bar"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
@@ -197,8 +226,9 @@
                 android:visibility="gone" />
         </LinearLayout>
 
-        <!-- boutons de la carte (.map-controls) -->
+        <!-- boutons de la carte (.map-controls) ; descendus par le code sous le panneau de guidage -->
         <LinearLayout
+            android:id="@+id/map_controls"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="end|top"

@@ -21,6 +21,7 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
@@ -34,6 +35,7 @@ import android.webkit.WebViewClient;
 import android.widget.Chronometer;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -49,16 +51,23 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import fr.cyu.campusexplorer.data.Place;
+import fr.cyu.campusexplorer.data.PlaceSearch;
 import fr.cyu.campusexplorer.data.Places;
 import fr.cyu.campusexplorer.data.SavedPlaces;
+import fr.cyu.campusexplorer.navigation.Guidance;
+import fr.cyu.campusexplorer.navigation.Instructions;
+import fr.cyu.campusexplorer.navigation.Route;
+import fr.cyu.campusexplorer.navigation.RouteClient;
 import fr.cyu.campusexplorer.tracking.TrackingService;
 import fr.cyu.campusexplorer.tracking.TrackingState;
 
@@ -83,6 +92,15 @@ public class MapActivity extends BaseActivity {
     private static final String PREF_SHOW_LOCATION = "show_location";
     /** apres une rotation d'ecran, on rouvre la meme fiche */
     private static final String STATE_SELECTED = "selected_place";
+    /** ... et on reprend le guidage vers le meme lieu */
+    private static final String STATE_DESTINATION = "destination_place";
+
+    /** vitesse de marche pour les minutes restantes : 1,3 m/s, soit environ 4,7 km/h */
+    private static final double WALK_SPEED = 1.3;
+    /** pas plus d'un calcul d'itineraire toutes les 15 s (recalcul apres un ecart) */
+    private static final long REROUTE_DELAY_MS = 15_000;
+    /** a vol d'oiseau, on retente le serveur toutes les 30 s (le reseau a pu revenir) */
+    private static final long RETRY_ROUTE_MS = 30_000;
 
     private WebView webView;
     private boolean mapReady = false;
@@ -90,6 +108,8 @@ public class MapActivity extends BaseActivity {
     private EditText search;
     private RadioGroup filters;
     private String currentCategory = "all";
+    private PlaceSearch placeSearch;
+    private LinearLayout suggestions;
 
     private View sheet;
     private boolean sheetExpanded = false;
@@ -117,6 +137,26 @@ public class MapActivity extends BaseActivity {
     /** que faire une fois la permission accordee */
     private Runnable afterPermission;
 
+    /** guidage : le lieu vise (null sans guidage) et l'itineraire (null tant qu'il n'est pas calcule) */
+    private Place destination;
+    private Guidance guidance;
+    /** le calcul d'itineraire fait du reseau : il tourne sur ce thread, jamais sur le thread principal */
+    private final ExecutorService routeThread = Executors.newSingleThreadExecutor();
+    /** numero de la derniere demande : une reponse plus ancienne (lieu change entre-temps) est ignoree */
+    private int routeRequest = 0;
+    private boolean routePending = false;
+    private long lastRouteTime;
+    private View guidancePanel;
+    private View searchBar;
+    private View filtersBar;
+    private View mapControls;
+    private ImageView guideArrow;
+    private TextView guideDestination;
+    private TextView guideInstruction;
+    private TextView guideDetail;
+    private TextView guideMinutes;
+    private TextView guideInfo;
+
     /* ====================================================================================
      * Cycle de vie
      * ==================================================================================== */
@@ -129,6 +169,7 @@ public class MapActivity extends BaseActivity {
         setupBottomNav(Tab.MAP);
 
         savedPlaces = new SavedPlaces(this);
+        placeSearch = new PlaceSearch(this);
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
 
         bindViews();
@@ -137,10 +178,13 @@ public class MapActivity extends BaseActivity {
         setupControls();
         setupSheet();
         setupTracking();
+        setupGuidance();
 
         // savedInstanceState n'est pas null apres une rotation : on retrouve le lieu ouvert
         if (savedInstanceState != null) {
             selected = Places.byId(savedInstanceState.getInt(STATE_SELECTED, -1));
+            // l'itineraire sera recalcule a la prochaine position
+            destination = Places.byId(savedInstanceState.getInt(STATE_DESTINATION, -1));
         }
         handleIntent(getIntent());
     }
@@ -195,12 +239,14 @@ public class MapActivity extends BaseActivity {
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
         if (selected != null) outState.putInt(STATE_SELECTED, selected.id);
+        if (destination != null) outState.putInt(STATE_DESTINATION, destination.id);
     }
 
-    /** liberation : messages en attente du Handler, pont JavaScript et WebView */
+    /** liberation : messages en attente du Handler, thread des itineraires, pont JavaScript et WebView */
     @Override
     protected void onDestroy() {
         handler.removeCallbacksAndMessages(null);
+        routeThread.shutdownNow();
         webView.removeJavascriptInterface("Android");
         webView.destroy();
         super.onDestroy();
@@ -210,6 +256,7 @@ public class MapActivity extends BaseActivity {
         webView = findViewById(R.id.map_web);
         search = findViewById(R.id.search);
         filters = findViewById(R.id.filters);
+        suggestions = findViewById(R.id.search_suggestions);
         sheet = findViewById(R.id.place_sheet);
         locationPrompt = findViewById(R.id.location_prompt);
         startTrackingButton = findViewById(R.id.btn_start_tracking);
@@ -220,6 +267,16 @@ public class MapActivity extends BaseActivity {
         statusText = findViewById(R.id.status_text);
         toast = findViewById(R.id.toast);
         toastText = findViewById(R.id.toast_text);
+        guidancePanel = findViewById(R.id.guidance_panel);
+        searchBar = findViewById(R.id.search_bar);
+        filtersBar = findViewById(R.id.filters_bar);
+        mapControls = findViewById(R.id.map_controls);
+        guideArrow = findViewById(R.id.guide_arrow);
+        guideDestination = findViewById(R.id.guide_destination);
+        guideInstruction = findViewById(R.id.guide_instruction);
+        guideDetail = findViewById(R.id.guide_detail);
+        guideMinutes = findViewById(R.id.guide_minutes);
+        guideInfo = findViewById(R.id.guide_info);
     }
 
     /**
@@ -323,7 +380,11 @@ public class MapActivity extends BaseActivity {
         js("CampusMap.setPlaces(" + placesJson() + ")");
         js("CampusMap.fitPlaces()");
         applyFilter();
-        if (selected != null) js("CampusMap.select(" + selected.id + ", true)");
+        if (selected != null) {
+            js("CampusMap.select(" + selected.id + ", true)");
+        } else if (destination != null) {
+            js("CampusMap.select(" + destination.id + ", false)");
+        }
         if (lastLocation != null) {
             js("CampusMap.showUser(" + coords(lastLocation.getLatitude(), lastLocation.getLongitude()) + ", false)");
         }
@@ -368,7 +429,6 @@ public class MapActivity extends BaseActivity {
                 array.put(new JSONObject()
                         .put("id", p.id)
                         .put("name", getString(p.name))
-                        .put("text", searchText(p))
                         .put("cat", p.category.key)
                         .put("lat", p.lat)
                         .put("lng", p.lng));
@@ -377,18 +437,6 @@ public class MapActivity extends BaseActivity {
             Log.e(TAG, "JSON des lieux", e);
         }
         return array.toString();
-    }
-
-    /** la recherche lit le nom ET les details : "Chenes", "Versailles" ou "IUT" trouvent le bon site */
-    private String searchText(Place p) {
-        return simplify(getString(p.name) + " " + getString(p.details));
-    }
-
-    /** minuscules et sans accents : "chenes" trouve "Chênes" */
-    private static String simplify(String text) {
-        return Normalizer.normalize(text, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "")
-                .toLowerCase(Locale.ROOT);
     }
 
     /** Locale.US : un point decimal, sinon "49,03" casserait l'appel JavaScript */
@@ -419,18 +467,20 @@ public class MapActivity extends BaseActivity {
         });
         clear.setOnClickListener(v -> search.setText(""));
 
-        // touche "Rechercher" du clavier : si un seul lieu correspond, on ouvre sa fiche
+        // touche "Rechercher" du clavier : on ouvre la fiche du meilleur resultat
         search.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId != EditorInfo.IME_ACTION_SEARCH) return false;
-            List<Place> matches = matchingPlaces();
-            if (matches.size() == 1) {
-                showSheet(matches.get(0), true);
-            } else if (matches.isEmpty()) {
+            List<Place> matches = placeSearch.search(search.getText().toString(), currentCategory, lastLocation);
+            if (matches.isEmpty()) {
                 showToast(R.string.map_no_place);
+            } else {
+                showSheet(matches.get(0), true);
             }
             hideKeyboard();
             return true;
         });
+        // les suggestions s'affichent quand on touche la barre, et disparaissent quand on la quitte
+        search.setOnFocusChangeListener((v, hasFocus) -> applyFilter());
 
         filters.setOnCheckedChangeListener((group, checkedId) -> {
             currentCategory = categoryFor(checkedId);
@@ -438,28 +488,72 @@ public class MapActivity extends BaseActivity {
         });
     }
 
-    /** Envoie la categorie cochee et le texte tape a map.js, qui masque les autres marqueurs. */
+    /**
+     * La recherche est faite en Java (PlaceSearch) ; map.js recoit seulement la liste des
+     * lieux a montrer, et comment cadrer la carte :
+     *  - "all"  : une recherche, on cadre tous les resultats (meme Versailles) ;
+     *  - "near" : une categorie seule, on cadre les resultats proches de Cergy ;
+     *  - "none" : ni recherche ni categorie, la carte ne bouge pas.
+     */
     private void applyFilter() {
-        // JSONObject.quote entoure le texte de guillemets et echappe ' " \ : ce que tape
-        // l'utilisateur ne peut pas casser (ni detourner) l'appel JavaScript
-        String query = JSONObject.quote(search.getText().toString());
-        js("CampusMap.filter('" + currentCategory + "', " + query + ")");
+        String query = search.getText().toString().trim();
+        List<Place> matches = placeSearch.search(query, currentCategory, lastLocation);
+        JSONArray ids = new JSONArray();
+        for (Place p : matches) ids.put(p.id);
+        String fit = !query.isEmpty() ? "all" : currentCategory.equals("all") ? "none" : "near";
+        js("CampusMap.filter(" + ids + ", '" + fit + "')");
+        showSuggestions(query, matches);
     }
 
+    /** au plus 5 suggestions sous la barre, pendant que l'utilisateur tape (ou des qu'il la touche) */
+    private static final int MAX_SUGGESTIONS = 5;
+
     /**
-     * Meme regle que CampusMap.filter cote JavaScript, refaite en Java pour la touche
-     * "Rechercher" : lieu de la categorie cochee ET dont le texte contient la recherche.
-     *
-     * @return les lieux qui correspondent (vide si aucun)
+     * Remplit la liste de suggestions : un clic ouvre la fiche du lieu.
+     * Barre vide : les lieux les plus proches (ou les premiers), comme point de depart.
      */
-    private List<Place> matchingPlaces() {
-        String q = simplify(search.getText().toString());
-        List<Place> result = new ArrayList<>();
-        for (Place p : Places.all()) {
-            boolean inCategory = currentCategory.equals("all") || p.category.key.equals(currentCategory);
-            if (inCategory && searchText(p).contains(q)) result.add(p);
+    private void showSuggestions(String query, List<Place> matches) {
+        suggestions.removeAllViews();
+        // les boutons de la carte sont dans un autre conteneur, dessine apres : on les cache
+        // pendant que la liste est ouverte, sinon ils passent par-dessus
+        mapControls.setVisibility(search.hasFocus() ? View.INVISIBLE : View.VISIBLE);
+        if (!search.hasFocus()) {
+            suggestions.setVisibility(View.GONE);
+            return;
         }
-        return result;
+        if (matches.isEmpty()) {
+            // une ligne "aucun lieu", pour ne pas laisser l'utilisateur sans reponse
+            TextView none = new TextView(this);
+            none.setText(R.string.map_no_place);
+            none.setTextColor(ContextCompat.getColor(this, R.color.muted));
+            none.setTextSize(13);
+            int pad = Math.round(14 * getResources().getDisplayMetrics().density);
+            none.setPadding(pad, pad, pad, pad);
+            suggestions.addView(none);
+        }
+        for (Place p : matches.subList(0, Math.min(MAX_SUGGESTIONS, matches.size()))) {
+            View row = getLayoutInflater().inflate(R.layout.item_search_suggestion, suggestions, false);
+            row.findViewById(R.id.suggestion_icon_box).setBackgroundTintList(
+                    ColorStateList.valueOf(ContextCompat.getColor(this, p.category.markerColor)));
+            ImageView icon = row.findViewById(R.id.suggestion_icon);
+            icon.setImageResource(p.category.icon);
+            icon.setImageTintList(ColorStateList.valueOf(ContextCompat.getColor(this,
+                    p.category == Place.Category.BUILDINGS ? R.color.white : R.color.black)));
+            ((TextView) row.findViewById(R.id.suggestion_name)).setText(p.name);
+            String info = getString(p.shortCategory);
+            if (lastLocation != null) {
+                float[] d = new float[1];
+                Location.distanceBetween(lastLocation.getLatitude(), lastLocation.getLongitude(), p.lat, p.lng, d);
+                info = getString(R.string.search_info_distance, info, TrackingState.formatDistance(this, d[0]));
+            }
+            ((TextView) row.findViewById(R.id.suggestion_info)).setText(info);
+            row.setOnClickListener(v -> {
+                hideKeyboard();      // retire le focus : les suggestions se ferment
+                showSheet(p, true);
+            });
+            suggestions.addView(row);
+        }
+        suggestions.setVisibility(View.VISIBLE);
     }
 
     /** bouton radio du filtre -> categorie envoyee a map.js (Map.of n'existe qu'a partir d'Android 11) */
@@ -499,8 +593,9 @@ public class MapActivity extends BaseActivity {
         findViewById(R.id.btn_zoom_in).setOnClickListener(v -> js("CampusMap.zoomIn()"));
         findViewById(R.id.btn_zoom_out).setOnClickListener(v -> js("CampusMap.zoomOut()"));
         findViewById(R.id.btn_locate).setOnClickListener(v -> {
-            // pendant un suivi, le bouton recentre la carte et la refait suivre l'utilisateur
-            if (TrackingState.isRunning()) {
+            // pendant un suivi ou un guidage, le bouton recentre la carte et la refait suivre
+            // l'utilisateur
+            if ((TrackingState.isRunning() || destination != null) && lastLocation != null) {
                 js("CampusMap.follow()");
             } else {
                 showMyPosition();
@@ -540,6 +635,9 @@ public class MapActivity extends BaseActivity {
             boolean nowSaved = savedPlaces.toggle(selected.id);
             updateSaveButton();
             showToast(nowSaved ? R.string.place_saved : R.string.place_removed);
+        });
+        findViewById(R.id.sheet_go).setOnClickListener(v -> {
+            if (selected != null) startGuidance(selected);
         });
     }
 
@@ -600,10 +698,18 @@ public class MapActivity extends BaseActivity {
      *
      * Elle est appelee apres chaque changement d'etat : on ne cache ou n'affiche jamais une vue
      * ailleurs, ce qui evite deux vues contradictoires a l'ecran.
+     *
+     * En haut, independamment : pendant un guidage, son panneau remplace la recherche et les
+     * filtres. Le guidage et le suivi peuvent tourner en meme temps.
      */
     private void refreshOverlays() {
         boolean tracking = TrackingState.isRunning();
         boolean located = lastLocation != null || (wantsLocation() && hasLocationPermission());
+        boolean guiding = destination != null;
+
+        guidancePanel.setVisibility(guiding ? View.VISIBLE : View.GONE);
+        searchBar.setVisibility(guiding ? View.GONE : View.VISIBLE);
+        filtersBar.setVisibility(guiding ? View.GONE : View.VISIBLE);
 
         trackingPanel.setVisibility(tracking ? View.VISIBLE : View.GONE);
         sheet.setVisibility(selected != null && !tracking ? View.VISIBLE : View.GONE);
@@ -793,6 +899,7 @@ public class MapActivity extends BaseActivity {
                 + centerOnNextFix + ")");
         centerOnNextFix = false;
         if (first) refreshOverlays();
+        onGuidancePosition(location.getLatitude(), location.getLongitude());
     }
 
     /* ====================================================================================
@@ -827,7 +934,8 @@ public class MapActivity extends BaseActivity {
     private void startTrackingService() {
         if (!hasLocationPermission()) return;
         selected = null;
-        js("CampusMap.select(null, false)");
+        // le lieu d'un guidage en cours reste mis en avant
+        js("CampusMap.select(" + (destination != null ? destination.id : "null") + ", false)");
         js("CampusMap.clearTrack()");
         // la carte suit l'utilisateur des le depart ; glisser la carte du doigt arrete de suivre
         js("CampusMap.setTracking(true)");
@@ -861,6 +969,8 @@ public class MapActivity extends BaseActivity {
                 js("CampusMap.showUser(" + coords(lat, lng) + ", false, " + Math.round(bearing) + ")");
                 if (first) js("CampusMap.follow()");
                 refreshTrackingUi();
+                // pendant un suivi, le GPS d'interface se tait : le guidage avance avec le service
+                onGuidancePosition(lat, lng);
             } else {
                 // le trace reste affiche jusqu'au prochain suivi, la carte arrete de suivre
                 js("CampusMap.setTracking(false)");
@@ -887,6 +997,187 @@ public class MapActivity extends BaseActivity {
             trackingTime.stop();
         }
         refreshOverlays();
+    }
+
+    /* ====================================================================================
+     * Guidage a pied vers un lieu ("Y aller")
+     * ==================================================================================== */
+
+    /*
+     * Deroulement :
+     *  1. "Y aller" sur la fiche -> startGuidance : permission, GPS d'interface, panneau du haut.
+     *  2. a la premiere position, requestRoute demande l'itineraire au serveur, sur routeThread.
+     *  3. a chaque position suivante (GPS d'interface, ou service pendant un suivi),
+     *     onGuidancePosition situe l'utilisateur sur l'itineraire (Guidance.update) et met a
+     *     jour la fleche, la phrase, les minutes restantes et la ligne sur la carte.
+     *  4. a moins de 20 m du lieu -> "Vous etes arrive", fin du guidage.
+     * Sans reseau, l'appli guide "a vol d'oiseau" : direction et distance en ligne droite.
+     */
+
+    private void setupGuidance() {
+        findViewById(R.id.guide_stop).setOnClickListener(v -> stopGuidance());
+        // le panneau de guidage est plus haut que la recherche : on descend les boutons de la
+        // carte juste en dessous, chaque fois que sa taille ou sa visibilite change
+        guidancePanel.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> placeControls());
+    }
+
+    private void placeControls() {
+        float gap = 10 * getResources().getDisplayMetrics().density;
+        float overlap = guidancePanel.getVisibility() == View.VISIBLE
+                ? guidancePanel.getBottom() + gap - mapControls.getTop() : 0;
+        mapControls.setTranslationY(Math.max(0, overlap));
+    }
+
+    /** "Y aller" : guide l'utilisateur jusqu'a ce lieu */
+    private void startGuidance(Place place) {
+        withLocationPermission(() -> {
+            setWantsLocation(true);
+            destination = place;
+            guidance = null;
+            routeRequest++;          // une reponse en attente pour un autre lieu sera ignoree
+            routePending = false;
+            selected = null;         // la fiche se ferme, le marqueur du lieu reste en avant
+            js("CampusMap.select(" + place.id + ", false)");
+            js("CampusMap.clearRoute()");
+            hideKeyboard();
+
+            guideDestination.setText(getString(R.string.nav_to, getString(place.name))
+                    .toUpperCase(Locale.getDefault()));
+            guideArrow.setImageResource(R.drawable.ic_route);
+            guideArrow.setRotation(0);
+            guideInstruction.setText(lastLocation != null ? R.string.nav_computing : R.string.nav_waiting);
+            guideDetail.setText("");
+            guideMinutes.setText("");
+            guideInfo.setText("");
+            refreshOverlays();
+
+            startLocationUpdates();
+            // position deja connue : on calcule tout de suite, sinon a la premiere position
+            if (lastLocation != null) {
+                requestRoute(lastLocation.getLatitude(), lastLocation.getLongitude());
+            }
+        });
+    }
+
+    private void stopGuidance() {
+        destination = null;
+        guidance = null;
+        routeRequest++;
+        routePending = false;
+        js("CampusMap.clearRoute()");
+        js("CampusMap.select(" + (selected != null ? selected.id : "null") + ", false)");
+        refreshOverlays();
+    }
+
+    /**
+     * Calcule l'itineraire sur routeThread (le reseau est interdit sur le thread principal),
+     * puis revient sur le thread principal avec runOnUiThread.
+     * runOnUiThread plutot que handler.post : showToast vide les messages du handler.
+     */
+    private void requestRoute(double lat, double lng) {
+        if (destination == null || routePending) return;
+        routePending = true;
+        lastRouteTime = SystemClock.elapsedRealtime();
+        int request = ++routeRequest;
+        double toLat = destination.lat;
+        double toLng = destination.lng;
+        routeThread.execute(() -> {
+            Route route;
+            try {
+                route = RouteClient.walking(lat, lng, toLat, toLng);
+            } catch (Exception e) {
+                // pas de reseau, serveur en panne, aucun chemin : on guidera a vol d'oiseau
+                Log.w(TAG, "itineraire indisponible", e);
+                route = null;
+            }
+            Route result = route;
+            runOnUiThread(() -> onRouteReady(request, result));
+        });
+    }
+
+    private void onRouteReady(int request, Route route) {
+        // reponse perimee (guidage arrete ou autre lieu choisi) ou ecran deja detruit
+        if (request != routeRequest || destination == null || isDestroyed()) return;
+        routePending = false;
+        boolean first = guidance == null;
+        if (route == null && (first || !guidance.isDirect())) showToast(getString(R.string.nav_direct), 3500);
+        guidance = new Guidance(route, destination.lat, destination.lng);
+        if (lastLocation != null) {
+            if (first && !guidance.isDirect()) {
+                // au depart, la carte cadre tout le trajet
+                js("CampusMap.showRoute(" + toJson(guidance.points()) + ", true)");
+            }
+            onGuidancePosition(lastLocation.getLatitude(), lastLocation.getLongitude());
+        }
+    }
+
+    /** nouvelle position pendant un guidage : avancement sur l'itineraire et panneau a jour */
+    private void onGuidancePosition(double lat, double lng) {
+        if (destination == null) return;
+        if (guidance == null) {
+            // premiere position apres "Y aller" : on calcule l'itineraire
+            guideInstruction.setText(R.string.nav_computing);
+            requestRoute(lat, lng);
+            return;
+        }
+
+        Guidance.Progress p = guidance.update(lat, lng);
+        if (p.arrived) {
+            Place reached = destination;
+            stopGuidance();
+            showToast(getString(R.string.nav_arrived, getString(reached.name)), 4000);
+            return;
+        }
+        js("CampusMap.showRoute(" + toJson(p.remaining) + ", false)");
+
+        // minutes restantes et heure d'arrivee, recalculees a chaque position
+        long seconds = Math.round(p.remainingMeters / WALK_SPEED);
+        guideMinutes.setText(getString(R.string.nav_minutes, Math.max(1, Math.round(seconds / 60.0))));
+        String arrival = DateFormat.getTimeFormat(this).format(new Date(System.currentTimeMillis() + seconds * 1000));
+        guideInfo.setText(getString(R.string.nav_info,
+                TrackingState.formatDistance(this, rounded(p.remainingMeters)), arrival));
+
+        // la phrase et la fleche ; ic_arrow pointe vers la droite, d'ou le -90 degres
+        if (guidance.isDirect()) {
+            guideArrow.setImageResource(R.drawable.ic_arrow);
+            guideArrow.setRotation(p.bearing - 90);
+            guideInstruction.setText(getString(R.string.nav_head, Instructions.compass(this, p.bearing)));
+            guideDetail.setText(R.string.nav_direct_short);
+        } else if ("arrive".equals(p.next.type)) {
+            guideArrow.setImageResource(R.drawable.ic_pin);
+            guideArrow.setRotation(0);
+            guideInstruction.setText(Instructions.text(this, p.next));
+            guideDetail.setText(getString(R.string.nav_in, TrackingState.formatDistance(this, rounded(p.toNextMeters))));
+        } else {
+            guideArrow.setImageResource(R.drawable.ic_arrow);
+            guideArrow.setRotation(Instructions.arrowAngle(p.next) - 90);
+            guideInstruction.setText(Instructions.text(this, p.next));
+            guideDetail.setText(getString(R.string.nav_in, TrackingState.formatDistance(this, rounded(p.toNextMeters))));
+        }
+
+        // l'utilisateur s'est ecarte de l'itineraire, ou on est a vol d'oiseau depuis un moment :
+        // on redemande un itineraire depuis sa position (au plus une fois toutes les 15 ou 30 s)
+        long since = SystemClock.elapsedRealtime() - lastRouteTime;
+        if ((p.offRouteMeters > Guidance.OFF_ROUTE_METERS && since > REROUTE_DELAY_MS)
+                || (guidance.isDirect() && since > RETRY_ROUTE_MS)) {
+            requestRoute(lat, lng);
+        }
+    }
+
+    /** arrondi a 5 m (10 m au-dela de 100 m) : le chiffre ne tremble pas a chaque position */
+    private static double rounded(double meters) {
+        double step = meters < 100 ? 5 : 10;
+        return Math.round(meters / step) * step;
+    }
+
+    /** [[lat, lng], ...] pour map.js */
+    private static String toJson(List<double[]> points) {
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < points.size(); i++) {
+            if (i > 0) sb.append(',');
+            sb.append('[').append(coords(points.get(i)[0], points.get(i)[1])).append(']');
+        }
+        return sb.append(']').toString();
     }
 
     /* ====================================================================================

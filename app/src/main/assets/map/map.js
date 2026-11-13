@@ -18,7 +18,7 @@
     };
 
     var map;
-    var places = [];          // [{id, name, text, cat, lat, lng}] ; text = nom + details en minuscules
+    var places = [];          // [{id, name, cat, lat, lng}]
     var markers = {};         // id -> L.marker
     var selectedId = null;
     var userMarker = null;
@@ -28,6 +28,8 @@
     var trackPoints = [];     // points retenus par le service : [[lat, lng], ...]
     var tracking = false;     // un suivi est en cours
     var following = false;    // la carte suit l'utilisateur (mode navigation)
+    var routeUnder = null;    // bord blanc de l'itineraire
+    var routeLine = null;     // itineraire a suivre, en bleu
 
     // centre de Cergy-Pontoise : la vue d'ensemble cadre les sites proches, pas Versailles
     var CERGY = L.latLng(49.0367, 2.0775);
@@ -145,30 +147,28 @@
             });
         },
 
-        /** n'affiche que les lieux de la categorie ("all" pour tout) dont le nom ou les details contiennent query */
-        filter: function (category, query) {
-            // minuscules et sans accents, comme le "text" prepare par Android :
-            // NFD separe "ê" en "e" + accent combinant, et l'expression retire ces accents
-            // (plage Unicode U+0300 a U+036F)
-            var q = (query || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+        /**
+         * n'affiche que les lieux dont l'id est dans ids. La recherche elle-meme (accents,
+         * fautes de frappe, mots-cles) est faite par Android, dans PlaceSearch.
+         * fitMode : "all" cadre tous ces lieux (une recherche peut viser Versailles), "near"
+         * seulement ceux proches de Cergy (une categorie), "none" ne bouge pas la carte.
+         */
+        filter: function (ids, fitMode) {
             var visible = 0;
             places.forEach(function (place) {
-                var show = (category === "all" || place.cat === category)
-                    && (place.text || place.name.toLowerCase()).indexOf(q) !== -1;
                 var m = markers[place.id];
-                if (show) {
+                if (ids.indexOf(place.id) !== -1) {
                     visible++;
                     if (!map.hasLayer(m)) m.addTo(map);
                 } else if (map.hasLayer(m)) {
                     map.removeLayer(m);
                 }
             });
-            // une recherche ou une categorie : on cadre les lieux trouves (sauf pendant un suivi)
-            if (!following && (q || category !== "all")) {
+            // on cadre les lieux trouves, sauf pendant un suivi (la carte suit l'utilisateur)
+            if (!following && fitMode !== "none") {
                 var shown = places.filter(function (place) { return map.hasLayer(markers[place.id]); });
-                // pour une categorie, les lieux proches suffisent ; une recherche peut viser Versailles
                 var near = shown.filter(isNearCergy);
-                fit(q || !near.length ? shown : near);
+                fit(fitMode === "all" || !near.length ? shown : near);
             }
             return visible;
         },
@@ -265,6 +265,38 @@
         clearTrack: function () {
             trackPoints = [];
             drawTrack();
+        },
+
+        /**
+         * Itineraire du guidage : la partie qui reste a parcourir, liste de [lat, lng].
+         * Android le renvoie a chaque position, raccourci du chemin deja fait.
+         * fit = true au premier affichage : la carte cadre tout le trajet.
+         */
+        showRoute: function (points, fit) {
+            if (!routeLine) {
+                // trait bleu borde de blanc, comme le trace jaune borde de noir
+                routeUnder = L.polyline(points, { color: "#ffffff", weight: 9, opacity: 0.9 }).addTo(map);
+                routeLine = L.polyline(points, { color: "#1688e8", weight: 5, dashArray: "1 9", lineCap: "round" }).addTo(map);
+                // sous le trace du suivi : le chemin deja marche reste visible par-dessus
+                routeLine.bringToBack();
+                routeUnder.bringToBack();
+            } else {
+                routeUnder.setLatLngs(points);
+                routeLine.setLatLngs(points);
+            }
+            if (fit) {
+                following = false;
+                map.fitBounds(routeLine.getBounds(), { paddingTopLeft: [30, 190], paddingBottomRight: [70, 110], maxZoom: 17 });
+            }
+        },
+
+        clearRoute: function () {
+            if (routeLine) {
+                map.removeLayer(routeLine);
+                map.removeLayer(routeUnder);
+                routeLine = null;
+                routeUnder = null;
+            }
         }
     };
 
