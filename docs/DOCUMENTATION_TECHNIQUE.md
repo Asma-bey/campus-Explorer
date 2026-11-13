@@ -1,5 +1,7 @@
 # CY Campus Explorer : documentation technique
 
+> **Mise à jour (branche `dev`, 13/11/2026)** : l'appli a maintenant un guidage à pied « Y aller » (itinéraire piéton, prochaine manœuvre, minutes restantes, heure d'arrivée) et une recherche avec suggestions et tolérance aux fautes. Les passages de ce document qui disent qu'il n'y a pas d'itinéraire décrivent la branche `main`. Le détail des nouvelles classes est dans `GUIDE_DEBUTANT.pdf` (sections 4.2 et 6).
+
 Projet de la mineure Mobile Computing, L3 Informatique, CY Cergy Paris Université.
 Équipe : BACHIR BEY Asma, GANDONOU Koffi Patrick-Léon. Enseignant : Dimitrios Kotzinos.
 

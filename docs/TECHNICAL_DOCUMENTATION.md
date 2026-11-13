@@ -1,5 +1,7 @@
 # CY Campus Explorer: Technical Documentation
 
+> **Update (`dev` branch, 13/11/2026)**: the app now has walking guidance ("Go there": walking route, next turn, remaining minutes, arrival time) and a search with suggestions and typo tolerance. The parts of this document saying there is no route guidance describe the `main` branch. The new classes are explained in `GUIDE_DEBUTANT.pdf` (French, sections 4.2 and 6).
+
 Mobile Computing class project, L3 Informatique, CY Cergy Paris Université.
 Team: BACHIR BEY Asma, GANDONOU Koffi Patrick-Léon. Instructor: Dimitrios Kotzinos.
 
