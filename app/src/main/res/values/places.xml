@@ -33,4 +33,32 @@
     <string name="place7_name">Crous residence</string>
     <string name="place7_description">Student housing and Crous welcome desk.</string>
     <string name="place7_details">The Crous residence Les Châteaux Saint-Sylvère, boulevard de l\'Hautil. Housing and information about student life.</string>
+
+    <string name="place8_name">Neuville site</string>
+    <string name="place8_description">The teaching site of Neuville-sur-Oise, by the RER A.</string>
+    <string name="place8_details">The Neuville-sur-Oise site, 5 mail Gay-Lussac, with its own university library. RER A station: Neuville-Université.</string>
+
+    <string name="place9_name">CY Tech, Parc site</string>
+    <string name="place9_description">The engineering school of CY, avenue du Parc.</string>
+    <string name="place9_details">CY Tech, avenue du Parc in Cergy, a few minutes from the university restaurant.</string>
+
+    <string name="place10_name">Saint-Germain-en-Laye site</string>
+    <string name="place10_description">A site of the INSPE, the teacher training institute.</string>
+    <string name="place10_details">The INSPE of the Versailles academy, Saint-Germain site, rue du Président Roosevelt in Saint-Germain-en-Laye.</string>
+
+    <string name="place11_name">Versailles site</string>
+    <string name="place11_description">The national school of architecture of Versailles.</string>
+    <string name="place11_details">The École nationale supérieure d\'architecture de Versailles (ENSA-V), avenue de Sceaux in Versailles.</string>
+
+    <string name="place12_name">Argenteuil site</string>
+    <string name="place12_description">A site of the IUT of Cergy-Pontoise.</string>
+    <string name="place12_details">The IUT of Cergy-Pontoise, Argenteuil site, 95-97 rue Valère Collas in Argenteuil.</string>
+
+    <string name="place13_name">Gennevilliers site</string>
+    <string name="place13_description">A site of CY Cergy Paris Université in the Hauts-de-Seine.</string>
+    <string name="place13_details">The Gennevilliers site, avenue Marcel Paul in Gennevilliers.</string>
+
+    <string name="place14_name">Sarcelles site</string>
+    <string name="place14_description">A site of the IUT of Cergy-Pontoise.</string>
+    <string name="place14_details">The IUT of Cergy-Pontoise, Sarcelles site, avenue Anna de Noailles in Sarcelles.</string>
 </resources>

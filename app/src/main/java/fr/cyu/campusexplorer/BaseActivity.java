@@ -28,6 +28,11 @@ public abstract class BaseActivity extends AppCompatActivity {
     /** les 3 onglets de la barre du bas */
     protected enum Tab { HOME, MAP, SAVED }
 
+    /*
+     * Heritage : MainActivity, MapActivity et SavedActivity heritent de cette classe, donc
+     * chacun de leurs callbacks passe aussi par ici (via super.onXxx()). getClass() renvoie la
+     * classe reelle : le journal affiche "MapActivity.onPause", pas "BaseActivity.onPause".
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -68,6 +73,9 @@ public abstract class BaseActivity extends AppCompatActivity {
      * Depuis Android 15 (targetSdk 35 et plus), l'appli dessine sous les barres du systeme.
      * On decale le contenu de la hauteur de ces barres : en haut sur la racine (dont la couleur
      * de fond remplit la zone de la barre d'etat), en bas sur la barre de navigation de l'appli.
+     *
+     * @param root      la vue racine du layout (R.id.root)
+     * @param bottomNav la barre d'onglets (R.id.bottom_nav), qui recoit la marge du bas
      */
     protected void applySystemBarInsets(View root, View bottomNav) {
         ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
@@ -85,6 +93,14 @@ public abstract class BaseActivity extends AppCompatActivity {
         setupTab(R.id.nav_saved, R.drawable.ic_bookmark, R.string.nav_saved, current == Tab.SAVED, SavedActivity.class);
     }
 
+    /**
+     * Un onglet est un view_nav_item.xml inclus 3 fois dans view_bottom_nav.xml.
+     * setSelected(true) active l'etat "selected" des selecteurs color/nav_item.xml (couleur).
+     * L'onglet de l'ecran courant n'a pas de clic : on ne rouvre pas l'ecran deja affiche.
+     *
+     * @param id     identifiant de l'onglet dans le layout
+     * @param target l'ecran a ouvrir au clic
+     */
     private void setupTab(int id, @DrawableRes int icon, @StringRes int label, boolean selected,
                           Class<? extends BaseActivity> target) {
         View tab = findViewById(id);

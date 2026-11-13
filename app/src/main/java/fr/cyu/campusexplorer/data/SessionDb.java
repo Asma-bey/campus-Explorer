@@ -41,10 +41,15 @@ public class SessionDb extends SQLiteOpenHelper {
         }
     }
 
+    /**
+     * Ne cree rien tout de suite : la base (fichier /data/data/fr.cyu.campusexplorer/databases/
+     * sessions.db) est ouverte au premier getWritableDatabase() / getReadableDatabase().
+     */
     public SessionDb(Context context) {
         super(context, DB_NAME, null, DB_VERSION);
     }
 
+    /** Appele par SQLiteOpenHelper une seule fois, quand le fichier de la base n'existe pas encore. */
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE " + TABLE + " ("
@@ -59,6 +64,15 @@ public class SessionDb extends SQLiteOpenHelper {
         // version 1 seulement pour l'instant ; une version 2 ferait un ALTER TABLE pour garder l'historique
     }
 
+    /**
+     * Enregistre le resume d'un parcours (appele par TrackingService.finishSession).
+     * Equivalent SQL : INSERT INTO SESSIONS (START_TIME, DURATION_S, DISTANCE_M) VALUES (?, ?, ?)
+     *
+     * @param startTime       debut, en millisecondes depuis 1970
+     * @param durationSeconds duree du parcours
+     * @param distanceMeters  distance parcourue
+     * @return l'ID de la nouvelle ligne, ou -1 en cas d'erreur
+     */
     public long insert(long startTime, long durationSeconds, double distanceMeters) {
         ContentValues row = new ContentValues();
         row.put(START, startTime);
@@ -67,7 +81,13 @@ public class SessionDb extends SQLiteOpenHelper {
         return getWritableDatabase().insert(TABLE, null, row);
     }
 
-    /** les "limit" derniers parcours, du plus recent au plus ancien */
+    /**
+     * les "limit" derniers parcours, du plus recent au plus ancien.
+     * Equivalent SQL : SELECT * FROM SESSIONS ORDER BY START_TIME DESC LIMIT ?
+     * Le try-with-resources ferme le Cursor meme en cas d'erreur.
+     *
+     * @param limit nombre maximum de lignes (5 dans SavedActivity)
+     */
     public List<Session> latest(int limit) {
         List<Session> sessions = new ArrayList<>();
         try (Cursor c = getReadableDatabase().query(TABLE, null, null, null, null, null,

@@ -23,6 +23,18 @@ final class Dialogs {
     private Dialogs() {
     }
 
+    /**
+     * Affiche un dialogue a deux boutons. Seul le bouton principal declenche une action ;
+     * le second ferme le dialogue sans rien faire.
+     *
+     * Utilise par MapActivity : explication avant la permission de localisation, et
+     * confirmation de l'arret du suivi.
+     *
+     * @param icon      icone en haut du dialogue ; iconColor et iconBackground la colorent
+     * @param title     titre ; text : explication
+     * @param primary   texte du bouton principal ; secondary : texte du bouton "annuler"
+     * @param onPrimary code execute apres un clic sur le bouton principal
+     */
     static void confirm(Activity activity,
                         @DrawableRes int icon, @ColorRes int iconColor, @ColorRes int iconBackground,
                         @StringRes int title, @StringRes int text,

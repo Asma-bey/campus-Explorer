@@ -19,10 +19,20 @@ public final class SavedPlaces {
 
     private final SharedPreferences prefs;
 
+    /**
+     * Ouvre le fichier de preferences "campus_explorer" (cree au premier ecrit), stocke en XML dans
+     * /data/data/fr.cyu.campusexplorer/shared_prefs/. MODE_PRIVATE : lisible par cette appli seule.
+     */
     public SavedPlaces(Context context) {
         prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
     }
 
+    /**
+     * Relit la chaine "3,1,4" et la decoupe.
+     *
+     * @return les identifiants enregistres, dans l'ordre d'ajout ; liste vide si rien n'est enregistre
+     *         (valeur par defaut "")
+     */
     public List<Integer> ids() {
         List<Integer> ids = new ArrayList<>();
         String stored = prefs.getString(KEY_IDS, "");
@@ -37,6 +47,7 @@ public final class SavedPlaces {
         return ids;
     }
 
+    /** @return true si ce lieu est enregistre (bouton jaune sur la fiche de la carte) */
     public boolean contains(int placeId) {
         return ids().contains(placeId);
     }
@@ -56,12 +67,17 @@ public final class SavedPlaces {
         return nowSaved;
     }
 
+    /** Retire le lieu (icone corbeille de l'ecran Enregistres) ; sans effet s'il n'y est pas. */
     public void remove(int placeId) {
         List<Integer> ids = ids();
         ids.remove(Integer.valueOf(placeId));
         save(ids);
     }
 
+    /**
+     * Reecrit toute la liste. apply() ecrit le fichier en arriere-plan sans bloquer l'ecran ;
+     * commit() ferait la meme chose de facon synchrone et renverrait un booleen.
+     */
     private void save(List<Integer> ids) {
         StringBuilder sb = new StringBuilder();
         for (int id : ids) {

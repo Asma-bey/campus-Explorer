@@ -52,7 +52,8 @@
     <string name="tracking_label">SUIVI EN COURS</string>
     <string name="tracking_distance">DISTANCE</string>
     <string name="tracking_stop">Arrêter le suivi</string>
-    <string name="tracking_finished">Parcours terminé.</string>
+    <!-- fin du parcours : « Parcours enregistré : 1,25 km en 18 min » -->
+    <string name="tracking_summary">Parcours enregistré : %1$s en %2$d min</string>
 
     <!-- dialogues -->
     <string name="dialog_location_title">Votre position</string>

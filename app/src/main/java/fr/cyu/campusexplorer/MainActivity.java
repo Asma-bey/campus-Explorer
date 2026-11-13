@@ -3,6 +3,7 @@ package fr.cyu.campusexplorer;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.GridLayout;
@@ -12,6 +13,7 @@ import android.widget.TextView;
 
 import androidx.annotation.StringRes;
 import androidx.core.content.ContextCompat;
+import androidx.core.splashscreen.SplashScreen;
 
 import java.util.List;
 
@@ -24,9 +26,20 @@ import fr.cyu.campusexplorer.data.Places;
  */
 public class MainActivity extends BaseActivity {
 
+    /** l'ecran de lancement reste au moins ce temps, sinon il disparait avant qu'on le voie */
+    private static final long SPLASH_MIN_MS = 700;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // AVANT super.onCreate : affiche l'ecran de lancement jaune, puis applique le theme de l'accueil
+        SplashScreen splash = SplashScreen.installSplashScreen(this);
+        if (savedInstanceState == null) {
+            // seulement au lancement, pas apres une rotation de l'ecran
+            long shownAt = SystemClock.uptimeMillis();
+            splash.setKeepOnScreenCondition(() -> SystemClock.uptimeMillis() - shownAt < SPLASH_MIN_MS);
+        }
         super.onCreate(savedInstanceState);
+        // le layout XML devient l'arbre de vues de l'ecran ; findViewById y retrouve les vues par id
         setContentView(R.layout.activity_main);
         applySystemBarInsets(findViewById(R.id.root), findViewById(R.id.bottom_nav));
         setupBottomNav(Tab.HOME);
@@ -49,8 +62,15 @@ public class MainActivity extends BaseActivity {
         addCategory(grid, inflater, Place.Category.SERVICES, R.string.cat_services_long, 3);
     }
 
+    /**
+     * Cree une carte de categorie a partir de item_category.xml et la place dans la grille.
+     *
+     * @param index position 0 a 3 : ligne = index / 2, colonne = index % 2 (grille 2 x 2)
+     */
     private void addCategory(GridLayout grid, LayoutInflater inflater, Place.Category category,
                              @StringRes int label, int index) {
+        // inflate(layout, parent, false) : la vue prend les parametres du parent sans y etre
+        // encore ajoutee ; on l'ajoute nous-memes avec grid.addView a la fin
         View card = inflater.inflate(R.layout.item_category, grid, false);
         ((TextView) card.findViewById(R.id.category_label)).setText(label);
         ((ImageView) card.findViewById(R.id.category_icon)).setImageResource(category.icon);
@@ -60,6 +80,7 @@ public class MainActivity extends BaseActivity {
                 ColorStateList.valueOf(ContextCompat.getColor(this, soft[index])));
 
         // 2 colonnes de largeur egale, 9dp d'ecart (gap: 9px)
+        // conversion dp -> pixels : pixels = dp x densite de l'ecran (ex. 9 x 2,625 = 24 px)
         int gap = Math.round(9 * getResources().getDisplayMetrics().density);
         GridLayout.LayoutParams params = new GridLayout.LayoutParams(
                 GridLayout.spec(index / 2), GridLayout.spec(index % 2, 1f));
@@ -94,6 +115,9 @@ public class MainActivity extends BaseActivity {
     /**
      * Intent explicite vers la carte. L'identifiant du lieu (ou la categorie) voyage
      * dans les extras, comme le prevoit la declaration du projet.
+     *
+     * @param category categorie a filtrer, ou null pour toutes ; lue par MapActivity.handleIntent
+     * @param placeId  lieu dont ouvrir la fiche, ou -1 pour aucun
      */
     private void openMap(Place.Category category, int placeId) {
         Intent intent = new Intent(this, MapActivity.class);

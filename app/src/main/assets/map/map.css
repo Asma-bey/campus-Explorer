@@ -79,3 +79,29 @@ html, body, #map {
 .leaflet-control-attribution a {
     color: #555;
 }
+
+/* fleche de direction pendant la marche : un triangle bleu au bord du halo, tourne selon le cap */
+.user-location .halo {
+    position: relative;
+}
+.user-location .arrow {
+    display: none;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 64px;
+    height: 64px;
+    transition: transform 0.4s;
+}
+.user-location .arrow::before {
+    content: "";
+    position: absolute;
+    left: 23px;
+    top: 6px;
+    border-left: 9px solid transparent;
+    border-right: 9px solid transparent;
+    border-bottom: 14px solid #1688e8;
+}
+.user-location .dot {
+    position: relative;
+}

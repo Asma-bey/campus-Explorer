@@ -33,4 +33,32 @@
     <string name="place7_name">Résidence Crous</string>
     <string name="place7_description">Logement étudiant et accueil du Crous.</string>
     <string name="place7_details">La résidence Crous Les Châteaux Saint-Sylvère, boulevard de l\'Hautil. Logement et informations sur la vie étudiante.</string>
+
+    <string name="place8_name">Site de Neuville</string>
+    <string name="place8_description">Le site d\'enseignement de Neuville-sur-Oise, au bord du RER A.</string>
+    <string name="place8_details">Le site de Neuville-sur-Oise, 5 mail Gay-Lussac, avec sa propre bibliothèque universitaire. Gare du RER A : Neuville-Université.</string>
+
+    <string name="place9_name">CY Tech, site du Parc</string>
+    <string name="place9_description">L\'école d\'ingénieurs de CY, avenue du Parc.</string>
+    <string name="place9_details">CY Tech, avenue du Parc à Cergy, à quelques minutes du restaurant universitaire.</string>
+
+    <string name="place10_name">Site de Saint-Germain-en-Laye</string>
+    <string name="place10_description">Un site de l\'INSPE, qui forme les enseignants.</string>
+    <string name="place10_details">L\'INSPE de l\'académie de Versailles, site de Saint-Germain, rue du Président Roosevelt à Saint-Germain-en-Laye.</string>
+
+    <string name="place11_name">Site de Versailles</string>
+    <string name="place11_description">L\'École nationale supérieure d\'architecture de Versailles.</string>
+    <string name="place11_details">L\'École nationale supérieure d\'architecture de Versailles (ENSA-V), avenue de Sceaux à Versailles.</string>
+
+    <string name="place12_name">Site d\'Argenteuil</string>
+    <string name="place12_description">Un site de l\'IUT de Cergy-Pontoise.</string>
+    <string name="place12_details">L\'IUT de Cergy-Pontoise, site d\'Argenteuil, 95-97 rue Valère Collas à Argenteuil.</string>
+
+    <string name="place13_name">Site de Gennevilliers</string>
+    <string name="place13_description">Un site de CY Cergy Paris Université dans les Hauts-de-Seine.</string>
+    <string name="place13_details">Le site de Gennevilliers, avenue Marcel Paul à Gennevilliers.</string>
+
+    <string name="place14_name">Site de Sarcelles</string>
+    <string name="place14_description">Un site de l\'IUT de Cergy-Pontoise.</string>
+    <string name="place14_details">L\'IUT de Cergy-Pontoise, site de Sarcelles, avenue Anna de Noailles à Sarcelles.</string>
 </resources>

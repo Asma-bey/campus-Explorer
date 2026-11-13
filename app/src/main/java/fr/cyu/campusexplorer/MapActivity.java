@@ -18,6 +18,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -48,6 +49,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -109,6 +111,7 @@ public class MapActivity extends BaseActivity {
     private LocationManager locationManager;
     private boolean listeningLocation = false;
     private Location lastLocation;
+    private long lastUiGpsFix;
     /** au premier fix apres "Afficher ma position", on centre la carte dessus */
     private boolean centerOnNextFix = false;
     /** que faire une fois la permission accordee */
@@ -135,6 +138,7 @@ public class MapActivity extends BaseActivity {
         setupSheet();
         setupTracking();
 
+        // savedInstanceState n'est pas null apres une rotation : on retrouve le lieu ouvert
         if (savedInstanceState != null) {
             selected = Places.byId(savedInstanceState.getInt(STATE_SELECTED, -1));
         }
@@ -152,6 +156,13 @@ public class MapActivity extends BaseActivity {
         handleIntent(intent);
     }
 
+    /*
+     * onResume / onPause forment une paire : tout ce qui est demarre ici est arrete dans onPause
+     * (receiver, GPS d'interface, Chronometer, WebView). L'ecran visible est le seul a consommer
+     * le GPS ; des qu'il est cache, la batterie n'est plus sollicitee pour lui.
+     * onResume relit aussi l'etat (TrackingState, reseau) : il a pu changer pendant que l'ecran
+     * etait cache, par exemple un suivi arrete depuis la notification.
+     */
     @Override
     protected void onResume() {
         super.onResume();
@@ -186,6 +197,7 @@ public class MapActivity extends BaseActivity {
         if (selected != null) outState.putInt(STATE_SELECTED, selected.id);
     }
 
+    /** liberation : messages en attente du Handler, pont JavaScript et WebView */
     @Override
     protected void onDestroy() {
         handler.removeCallbacksAndMessages(null);
@@ -210,6 +222,12 @@ public class MapActivity extends BaseActivity {
         toastText = findViewById(R.id.toast_text);
     }
 
+    /**
+     * Lit les extras envoyes par l'accueil ou l'ecran Enregistres.
+     *
+     * @param intent EXTRA_CATEGORY ("library", "food"...) coche le filtre ;
+     *               EXTRA_PLACE_ID (1 a 14) ouvre la fiche du lieu et centre la carte dessus
+     */
     private void handleIntent(Intent intent) {
         String category = intent.getStringExtra(EXTRA_CATEGORY);
         if (category != null) {
@@ -295,7 +313,11 @@ public class MapActivity extends BaseActivity {
         }
     }
 
-    /** la page est chargee : on lui envoie les lieux et l'etat courant */
+    /**
+     * la page est chargee : on lui envoie les lieux et l'etat courant.
+     * Tant que mapReady est false, js() ignore les appels : la page n'existe pas encore. C'est
+     * pourquoi tout l'etat (filtre, fiche ouverte, point bleu, trace) est renvoye ici.
+     */
     private void onMapLoaded() {
         mapReady = true;
         js("CampusMap.setPlaces(" + placesJson() + ")");
@@ -308,7 +330,32 @@ public class MapActivity extends BaseActivity {
         if (TrackingState.isRunning()) drawFullTrack();
     }
 
-    /** Appelle une fonction de map.js. Ignore l'appel si la page n'est pas encore prete. */
+    /**
+     * Pendant un suivi : le trace complet, le point bleu a la derniere position du service,
+     * et la carte qui suit l'utilisateur (comme le mode navigation de Google Maps).
+     */
+    private void drawFullTrack() {
+        JSONArray array = new JSONArray();
+        try {
+            for (double[] p : TrackingState.points()) {
+                array.put(new JSONArray().put(p[0]).put(p[1]));
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "JSON du trace", e);
+        }
+        js("CampusMap.setTrack(" + array + ")");
+        double[] here = TrackingState.position();
+        if (here != null) js("CampusMap.showUser(" + coords(here[0], here[1]) + ", false)");
+        js("CampusMap.setTracking(true)");
+    }
+
+    /**
+     * Appelle une fonction de map.js. Ignore l'appel si la page n'est pas encore prete.
+     * evaluateJavascript est asynchrone ; le second argument (null) signifie qu'on n'attend pas
+     * de valeur de retour.
+     *
+     * @param code une instruction JavaScript, ex. "CampusMap.select(3, true)"
+     */
     private void js(String code) {
         if (mapReady) webView.evaluateJavascript(code, null);
     }
@@ -321,6 +368,7 @@ public class MapActivity extends BaseActivity {
                 array.put(new JSONObject()
                         .put("id", p.id)
                         .put("name", getString(p.name))
+                        .put("text", searchText(p))
                         .put("cat", p.category.key)
                         .put("lat", p.lat)
                         .put("lng", p.lng));
@@ -329,6 +377,18 @@ public class MapActivity extends BaseActivity {
             Log.e(TAG, "JSON des lieux", e);
         }
         return array.toString();
+    }
+
+    /** la recherche lit le nom ET les details : "Chenes", "Versailles" ou "IUT" trouvent le bon site */
+    private String searchText(Place p) {
+        return simplify(getString(p.name) + " " + getString(p.details));
+    }
+
+    /** minuscules et sans accents : "chenes" trouve "Chênes" */
+    private static String simplify(String text) {
+        return Normalizer.normalize(text, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toLowerCase(Locale.ROOT);
     }
 
     /** Locale.US : un point decimal, sinon "49,03" casserait l'appel JavaScript */
@@ -378,6 +438,7 @@ public class MapActivity extends BaseActivity {
         });
     }
 
+    /** Envoie la categorie cochee et le texte tape a map.js, qui masque les autres marqueurs. */
     private void applyFilter() {
         // JSONObject.quote entoure le texte de guillemets et echappe ' " \ : ce que tape
         // l'utilisateur ne peut pas casser (ni detourner) l'appel JavaScript
@@ -385,13 +446,18 @@ public class MapActivity extends BaseActivity {
         js("CampusMap.filter('" + currentCategory + "', " + query + ")");
     }
 
+    /**
+     * Meme regle que CampusMap.filter cote JavaScript, refaite en Java pour la touche
+     * "Rechercher" : lieu de la categorie cochee ET dont le texte contient la recherche.
+     *
+     * @return les lieux qui correspondent (vide si aucun)
+     */
     private List<Place> matchingPlaces() {
-        Locale locale = Locale.getDefault();
-        String q = search.getText().toString().toLowerCase(locale);
+        String q = simplify(search.getText().toString());
         List<Place> result = new ArrayList<>();
         for (Place p : Places.all()) {
             boolean inCategory = currentCategory.equals("all") || p.category.key.equals(currentCategory);
-            if (inCategory && getString(p.name).toLowerCase(locale).contains(q)) result.add(p);
+            if (inCategory && searchText(p).contains(q)) result.add(p);
         }
         return result;
     }
@@ -432,7 +498,14 @@ public class MapActivity extends BaseActivity {
     private void setupControls() {
         findViewById(R.id.btn_zoom_in).setOnClickListener(v -> js("CampusMap.zoomIn()"));
         findViewById(R.id.btn_zoom_out).setOnClickListener(v -> js("CampusMap.zoomOut()"));
-        findViewById(R.id.btn_locate).setOnClickListener(v -> showMyPosition());
+        findViewById(R.id.btn_locate).setOnClickListener(v -> {
+            // pendant un suivi, le bouton recentre la carte et la refait suivre l'utilisateur
+            if (TrackingState.isRunning()) {
+                js("CampusMap.follow()");
+            } else {
+                showMyPosition();
+            }
+        });
         findViewById(R.id.btn_prompt_locate).setOnClickListener(v -> showMyPosition());
     }
 
@@ -470,6 +543,13 @@ public class MapActivity extends BaseActivity {
         });
     }
 
+    /**
+     * Remplit la fiche du bas avec le lieu et met son marqueur en avant.
+     *
+     * @param place le lieu a afficher
+     * @param pan   true pour deplacer la carte jusqu'au lieu (venue d'un autre ecran ou recherche),
+     *              false s'il vient d'un clic sur son marqueur, deja visible
+     */
     private void showSheet(Place place, boolean pan) {
         selected = place;
         sheetExpanded = false;
@@ -509,6 +589,18 @@ public class MapActivity extends BaseActivity {
      * Ce qui s'affiche en bas de la carte, selon l'etat (meme logique que la maquette)
      * ==================================================================================== */
 
+    /*
+     * Une seule methode decide de ce qui est visible, a partir de 3 etats :
+     *
+     *   suivi en cours | lieu selectionne | position connue -> visible
+     *   oui            | -                | -               -> panneau de suivi
+     *   non            | oui              | -               -> fiche du lieu
+     *   non            | non              | oui             -> bouton "Demarrer le suivi"
+     *   non            | non              | non             -> bouton + invitation a activer la position
+     *
+     * Elle est appelee apres chaque changement d'etat : on ne cache ou n'affiche jamais une vue
+     * ailleurs, ce qui evite deux vues contradictoires a l'ecran.
+     */
     private void refreshOverlays() {
         boolean tracking = TrackingState.isRunning();
         boolean located = lastLocation != null || (wantsLocation() && hasLocationPermission());
@@ -536,17 +628,28 @@ public class MapActivity extends BaseActivity {
 
     /** message noir avec coche, 2,2 s, comme le .toast de la maquette */
     private void showToast(@StringRes int text) {
+        showToast(getString(text), 2200);
+    }
+
+    private void showToast(CharSequence text, long durationMs) {
         toastText.setText(text);
         handler.removeCallbacksAndMessages(null);
         toast.animate().alpha(1f).setDuration(150).start();
-        handler.postDelayed(() -> toast.animate().alpha(0f).setDuration(250).start(), 2200);
+        handler.postDelayed(() -> toast.animate().alpha(0f).setDuration(250).start(), durationMs);
     }
 
     /* ====================================================================================
      * Permission de localisation
      * ==================================================================================== */
 
-    /** demande des deux permissions de localisation ; la reponse arrive dans ce callback */
+    /*
+     * demande des deux permissions de localisation ; la reponse arrive dans ce callback.
+     * registerForActivityResult remplace l'ancien couple requestPermissions /
+     * onRequestPermissionsResult : il doit etre appele a la creation de l'Activity (d'ou un
+     * champ), et Android affiche la fenetre systeme "Autoriser ... ?".
+     * shouldShowRequestPermissionRationale renvoie false apres un refus definitif ("Ne plus
+     * demander") : Android ne montrera plus la fenetre, seul l'ecran des reglages peut l'accorder.
+     */
     private final ActivityResultLauncher<String[]> locationPermission =
             registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), result -> {
                 if (hasLocationPermission()) {
@@ -597,6 +700,11 @@ public class MapActivity extends BaseActivity {
                 });
     }
 
+    /*
+     * getPreferences (sans nom) ouvre le fichier de preferences propre a cette Activity, nomme
+     * d'apres sa classe : shared_prefs/MapActivity.xml. Cle "show_location", false par defaut.
+     * Le choix "afficher ma position" survit ainsi a la fermeture de l'appli.
+     */
     private boolean wantsLocation() {
         return getPreferences(MODE_PRIVATE).getBoolean(PREF_SHOW_LOCATION, false);
     }
@@ -628,6 +736,12 @@ public class MapActivity extends BaseActivity {
         }
     };
 
+    /**
+     * GPS "d'interface" : le point bleu quand aucun suivi ne tourne. Meme schema que le service
+     * (LocationManager + LocationListener, une position par seconde), mais sans Looper explicite :
+     * appele depuis le thread principal, il utilise la boucle de ce thread.
+     * listeningLocation empeche d'abonner deux fois le meme listener.
+     */
     @SuppressLint("MissingPermission")   // verifie juste au-dessus par hasLocationPermission()
     private void startLocationUpdates() {
         if (listeningLocation || !hasLocationPermission()) return;
@@ -646,10 +760,10 @@ public class MapActivity extends BaseActivity {
         if (last != null) onUiLocation(last);
 
         if (gps) {
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 2f, uiListener);
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0f, uiListener);
         }
         if (network) {
-            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 2000, 2f, uiListener);
+            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000, 0f, uiListener);
         }
         listeningLocation = true;
         Log.d(TAG, "GPS d'interface demarre");
@@ -663,6 +777,16 @@ public class MapActivity extends BaseActivity {
     }
 
     private void onUiLocation(Location location) {
+        // pendant un suivi, c'est le service qui place le point bleu : sinon deux sources se
+        // contredisent et le point saute entre la position du trace et celle de l'ecran
+        if (TrackingState.isRunning()) return;
+        // une position reseau, moins precise, ne remplace pas une position GPS recente
+        long now = SystemClock.elapsedRealtime();
+        if (LocationManager.GPS_PROVIDER.equals(location.getProvider())) {
+            lastUiGpsFix = now;
+        } else if (lastUiGpsFix != 0 && now - lastUiGpsFix < 10_000) {
+            return;
+        }
         boolean first = lastLocation == null;
         lastLocation = location;
         js("CampusMap.showUser(" + coords(location.getLatitude(), location.getLongitude()) + ", "
@@ -695,55 +819,74 @@ public class MapActivity extends BaseActivity {
                         () -> TrackingService.stop(this)));
     }
 
+    /**
+     * Lance la session : la carte se vide (fiche fermee, ancien trace efface) puis suit
+     * l'utilisateur, et le service demarre. Appele seulement apres l'accord de la permission
+     * de localisation (et la question des notifications sur Android 13+).
+     */
     private void startTrackingService() {
         if (!hasLocationPermission()) return;
         selected = null;
         js("CampusMap.select(null, false)");
         js("CampusMap.clearTrack()");
+        // la carte suit l'utilisateur des le depart ; glisser la carte du doigt arrete de suivre
+        js("CampusMap.setTracking(true)");
+        if (lastLocation != null) js("CampusMap.follow()");
         TrackingService.start(this);
         // l'etat du service est pret des que onStartCommand a tourne ; on rafraichit juste apres
         handler.postDelayed(this::refreshTrackingUi, 300);
     }
 
-    /** messages du service : nouvelle position, ou fin de la session */
+    /*
+     * messages du service : nouvelle position, ou fin de la session.
+     * Receiver dynamique (enregistre dans onResume, retire dans onPause), RECEIVER_NOT_EXPORTED :
+     * seule notre appli peut lui envoyer un message. onReceive tourne sur le thread principal.
+     */
     private final BroadcastReceiver trackingReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (intent.getBooleanExtra(TrackingService.EXTRA_RUNNING, false)) {
                 double lat = intent.getDoubleExtra(TrackingService.EXTRA_LAT, 0);
                 double lng = intent.getDoubleExtra(TrackingService.EXTRA_LNG, 0);
-                js("CampusMap.addTrackPoint(" + coords(lat, lng) + ")");
+                float bearing = intent.getFloatExtra(TrackingService.EXTRA_BEARING, -1f);
+                boolean first = lastLocation == null;
+                Location here = new Location("tracking");
+                here.setLatitude(lat);
+                here.setLongitude(lng);
+                lastLocation = here;
+                // le point bleu bouge a chaque position ; le trace ne s'allonge que si on a avance
+                if (intent.getBooleanExtra(TrackingService.EXTRA_COUNTED, false)) {
+                    js("CampusMap.addTrackPoint(" + coords(lat, lng) + ")");
+                }
+                js("CampusMap.showUser(" + coords(lat, lng) + ", false, " + Math.round(bearing) + ")");
+                if (first) js("CampusMap.follow()");
                 refreshTrackingUi();
             } else {
-                js("CampusMap.clearTrack()");
+                // le trace reste affiche jusqu'au prochain suivi, la carte arrete de suivre
+                js("CampusMap.setTracking(false)");
                 refreshTrackingUi();
-                showToast(R.string.tracking_finished);
+                double meters = intent.getDoubleExtra(TrackingService.EXTRA_METERS, 0);
+                long minutes = Math.round(intent.getLongExtra(TrackingService.EXTRA_SECONDS, 0) / 60.0);
+                showToast(getString(R.string.tracking_summary,
+                        TrackingState.formatDistance(MapActivity.this, meters), minutes), 4000);
             }
         }
     };
 
+    /**
+     * Met a jour le panneau de suivi depuis TrackingState. Le Chronometer compte tout seul a
+     * partir de sa base (l'instant du depart, horloge elapsedRealtime) : pas besoin de le
+     * rafraichir chaque seconde depuis le code.
+     */
     private void refreshTrackingUi() {
         if (TrackingState.isRunning()) {
             trackingTime.setBase(TrackingState.startElapsed());
             trackingTime.start();
-            trackingDistance.setText(getString(R.string.tracking_km, TrackingState.distanceMeters() / 1000));
+            trackingDistance.setText(TrackingState.formatDistance(this, TrackingState.distanceMeters()));
         } else {
             trackingTime.stop();
         }
         refreshOverlays();
-    }
-
-    /** au retour sur la carte pendant un suivi : on redessine tout le trace d'un coup */
-    private void drawFullTrack() {
-        JSONArray array = new JSONArray();
-        try {
-            for (double[] p : TrackingState.points()) {
-                array.put(new JSONArray().put(p[0]).put(p[1]));
-            }
-        } catch (JSONException e) {
-            Log.e(TAG, "JSON du trace", e);
-        }
-        js("CampusMap.setTrack(" + array + ")");
     }
 
     /* ====================================================================================
@@ -754,6 +897,11 @@ public class MapActivity extends BaseActivity {
         findViewById(R.id.offline_banner).setVisibility(isOnline() ? View.GONE : View.VISIBLE);
     }
 
+    /**
+     * @return true si le reseau actif annonce un acces Internet (permission ACCESS_NETWORK_STATE).
+     *         Ne garantit pas que les serveurs de tuiles repondent : map.js previent aussi par
+     *         onTilesError.
+     */
     private boolean isOnline() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
         Network network = cm.getActiveNetwork();

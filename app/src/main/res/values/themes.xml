@@ -22,9 +22,18 @@
     <!-- l'accueil a une barre d'etat jaune, comme le haut de l'ecran -->
     <style name="Theme.CampusExplorer.Home">
         <item name="android:statusBarColor">@color/yellow</item>
-        <!-- ecran de lancement d'Android 12+ : fond jaune et epingle, comme l'icone -->
-        <item name="android:windowSplashScreenBackground" tools:targetApi="31">@color/yellow</item>
-        <item name="android:windowSplashScreenAnimatedIcon" tools:targetApi="31">@drawable/ic_launcher_foreground</item>
+    </style>
+
+    <!--
+        Ecran de lancement : fond jaune et epingle noire, comme l'icone de l'appli.
+        Theme de la bibliotheque core-splashscreen : il marche de Android 8 (notre minSdk) a
+        Android 16, alors que l'ecran natif n'existe qu'a partir d'Android 12.
+        MainActivity.onCreate appelle installSplashScreen(), puis l'accueil prend postSplashScreenTheme.
+    -->
+    <style name="Theme.CampusExplorer.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/yellow</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.CampusExplorer.Home</item>
     </style>
 
     <!-- ===== styles de texte (tailles de la maquette x1,3 environ, minimum 10sp pour rester lisible) ===== -->

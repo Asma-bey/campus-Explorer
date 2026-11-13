@@ -13,6 +13,7 @@
     <string name="map_plus" translatable="false">+</string>
     <string name="map_minus" translatable="false">−</string>
     <string name="tracking_km" translatable="false">%1$.2f km</string>
+    <string name="tracking_m" translatable="false">%1$d m</string>
 
     <!-- bottom bar -->
     <string name="nav_home">Home</string>
@@ -65,7 +66,8 @@
     <string name="tracking_label">TRACKING</string>
     <string name="tracking_distance">DISTANCE</string>
     <string name="tracking_stop">Stop tracking</string>
-    <string name="tracking_finished">Walk finished.</string>
+    <!-- end of a walk: "Walk saved: 1.25 km in 18 min" -->
+    <string name="tracking_summary">Walk saved: %1$s in %2$d min</string>
 
     <!-- dialogs -->
     <string name="dialog_location_title">Your location</string>

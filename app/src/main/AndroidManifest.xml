@@ -32,11 +32,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CampusExplorer">
 
-        <!-- Ecran 1 : accueil, point d'entree -->
+        <!-- Ecran 1 : accueil, point d'entree. Il demarre avec le theme de l'ecran de lancement -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.CampusExplorer.Home">
+            android:theme="@style/Theme.CampusExplorer.Starting">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

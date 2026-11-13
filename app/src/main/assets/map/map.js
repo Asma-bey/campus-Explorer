@@ -18,13 +18,20 @@
     };
 
     var map;
-    var places = [];          // [{id, name, cat, lat, lng}]
+    var places = [];          // [{id, name, text, cat, lat, lng}] ; text = nom + details en minuscules
     var markers = {};         // id -> L.marker
     var selectedId = null;
     var userMarker = null;
     var userPosition = null;
     var trackUnder = null;    // trait noir large sous le trace
     var trackLine = null;     // trait jaune du trace
+    var trackPoints = [];     // points retenus par le service : [[lat, lng], ...]
+    var tracking = false;     // un suivi est en cours
+    var following = false;    // la carte suit l'utilisateur (mode navigation)
+
+    // centre de Cergy-Pontoise : la vue d'ensemble cadre les sites proches, pas Versailles
+    var CERGY = L.latLng(49.0367, 2.0775);
+    var NEAR_CERGY_M = 8000;
 
     function bridge() {
         // absent si la page est ouverte dans un navigateur ordinaire (pour tester)
@@ -45,12 +52,51 @@
         });
     }
 
+    /** distanceTo de Leaflet : distance en metres sur la sphere terrestre (formule de haversine) */
+    function isNearCergy(place) {
+        return CERGY.distanceTo([place.lat, place.lng]) < NEAR_CERGY_M;
+    }
+
+    /** cadre ces lieux, en laissant de la place pour la recherche, les filtres et les boutons */
+    function fit(list) {
+        if (!list.length) return;
+        var bounds = L.latLngBounds(list.map(function (p) { return [p.lat, p.lng]; }));
+        map.fitBounds(bounds, { paddingTopLeft: [24, 150], paddingBottomRight: [70, 170], maxZoom: 16 });
+    }
+
+    /** le trace + un dernier segment jusqu'au point bleu, pour que la ligne colle a l'utilisateur */
+    function drawTrack() {
+        var points = trackPoints.slice();
+        if (tracking && userPosition && points.length) points.push(userPosition);
+        if (!points.length) {
+            if (trackLine) {
+                map.removeLayer(trackLine);
+                map.removeLayer(trackUnder);
+                trackLine = null;
+                trackUnder = null;
+            }
+            return;
+        }
+        // deux polylignes superposees (noire large dessous, jaune fine dessus) : un trait jaune
+        // borde de noir, lisible sur toutes les couleurs de la carte. On les cree une fois, puis
+        // on change seulement leurs points (setLatLngs), sans recreer de calque a chaque position
+        if (!trackLine) {
+            trackUnder = L.polyline(points, { color: "#090909", weight: 7, opacity: 0.9 }).addTo(map);
+            trackLine = L.polyline(points, { color: "#ffe500", weight: 4 }).addTo(map);
+        } else {
+            trackUnder.setLatLngs(points);
+            trackLine.setLatLngs(points);
+        }
+    }
+
     function init() {
         map = L.map("map", {
             zoomControl: false,          // nos boutons + et - sont des vues Android
             attributionControl: true
         }).setView([49.0367, 2.0775], 15);
 
+        // fond de carte : images de 256 x 256 px decoupees par niveau de zoom z et colonne/ligne
+        // x, y ; Leaflet ne telecharge que celles de la zone visible
         var tiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
             maxZoom: 19,
             className: "osm-tiles",
@@ -72,6 +118,9 @@
         });
         tiles.addTo(map);
         map.attributionControl.setPrefix(false);
+
+        // l'utilisateur deplace la carte du doigt : on arrete de la recentrer sur lui
+        map.on("dragstart", function () { following = false; });
 
         if (bridge()) bridge().onMapReady();
     }
@@ -96,13 +145,16 @@
             });
         },
 
-        /** n'affiche que les lieux de la categorie ("all" pour tout) dont le nom contient query */
+        /** n'affiche que les lieux de la categorie ("all" pour tout) dont le nom ou les details contiennent query */
         filter: function (category, query) {
-            var q = (query || "").toLowerCase();
+            // minuscules et sans accents, comme le "text" prepare par Android :
+            // NFD separe "ê" en "e" + accent combinant, et l'expression retire ces accents
+            // (plage Unicode U+0300 a U+036F)
+            var q = (query || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
             var visible = 0;
             places.forEach(function (place) {
                 var show = (category === "all" || place.cat === category)
-                    && place.name.toLowerCase().indexOf(q) !== -1;
+                    && (place.text || place.name.toLowerCase()).indexOf(q) !== -1;
                 var m = markers[place.id];
                 if (show) {
                     visible++;
@@ -111,6 +163,13 @@
                     map.removeLayer(m);
                 }
             });
+            // une recherche ou une categorie : on cadre les lieux trouves (sauf pendant un suivi)
+            if (!following && (q || category !== "all")) {
+                var shown = places.filter(function (place) { return map.hasLayer(markers[place.id]); });
+                // pour une categorie, les lieux proches suffisent ; une recherche peut viser Versailles
+                var near = shown.filter(isNearCergy);
+                fit(q || !near.length ? shown : near);
+            }
             return visible;
         },
 
@@ -129,22 +188,23 @@
 
         /** cadre tous les lieux, en laissant de la place pour la recherche, les filtres et les boutons */
         fitPlaces: function () {
-            if (!places.length) return;
-            var bounds = L.latLngBounds(places.map(function (p) { return [p.lat, p.lng]; }));
-            map.fitBounds(bounds, { paddingTopLeft: [24, 150], paddingBottomRight: [70, 170], maxZoom: 16 });
+            fit(places.filter(isNearCergy));
         },
 
         zoomIn: function () { map.zoomIn(); },
         zoomOut: function () { map.zoomOut(); },
 
-        /** point bleu de l'utilisateur ; center = true pour recentrer la carte dessus */
-        showUser: function (lat, lng, center) {
+        /**
+         * Point bleu de l'utilisateur ; center = true pour recentrer la carte dessus.
+         * bearing : direction du deplacement en degres (0 = nord), absente ou -1 a l'arret.
+         */
+        showUser: function (lat, lng, center, bearing) {
             userPosition = [lat, lng];
             if (!userMarker) {
                 userMarker = L.marker(userPosition, {
                     icon: L.divIcon({
                         className: "user-location",
-                        html: '<div class="halo"><div class="dot"></div></div>',
+                        html: '<div class="halo"><div class="arrow"></div><div class="dot"></div></div>',
                         iconSize: [64, 64],
                         iconAnchor: [32, 32]
                     }),
@@ -154,7 +214,33 @@
             } else {
                 userMarker.setLatLng(userPosition);
             }
-            if (center) map.flyTo(userPosition, Math.max(map.getZoom(), 17), { duration: 0.6 });
+            // la fleche indique la direction de la marche, comme dans Google Maps
+            var arrow = userMarker.getElement() && userMarker.getElement().querySelector(".arrow");
+            if (arrow) {
+                var moving = typeof bearing === "number" && bearing >= 0;
+                arrow.style.display = moving ? "block" : "none";
+                if (moving) arrow.style.transform = "rotate(" + bearing + "deg)";
+            }
+            if (center) {
+                map.flyTo(userPosition, Math.max(map.getZoom(), 17), { duration: 0.6 });
+            } else if (following) {
+                // la camera accompagne l'utilisateur en douceur
+                map.panTo(userPosition, { animate: true, duration: 0.8 });
+            }
+            if (tracking) drawTrack();
+        },
+
+        /** recentre la carte sur l'utilisateur et la fait suivre ses deplacements */
+        follow: function () {
+            following = true;
+            if (userPosition) map.flyTo(userPosition, Math.max(map.getZoom(), 17), { duration: 0.6 });
+        },
+
+        /** debut (true) ou fin (false) d'un suivi : la carte suit l'utilisateur pendant le suivi */
+        setTracking: function (on) {
+            tracking = on;
+            following = on;
+            drawTrack();
         },
 
         hideUser: function () {
@@ -167,31 +253,18 @@
 
         /** trace du parcours en cours : liste de [lat, lng] */
         setTrack: function (points) {
-            if (!trackLine) {
-                trackUnder = L.polyline(points, { color: "#090909", weight: 7, opacity: 0.9 }).addTo(map);
-                trackLine = L.polyline(points, { color: "#ffe500", weight: 4 }).addTo(map);
-            } else {
-                trackUnder.setLatLngs(points);
-                trackLine.setLatLngs(points);
-            }
+            trackPoints = points;
+            drawTrack();
         },
 
         addTrackPoint: function (lat, lng) {
-            if (!trackLine) {
-                this.setTrack([[lat, lng]]);
-            } else {
-                trackUnder.addLatLng([lat, lng]);
-                trackLine.addLatLng([lat, lng]);
-            }
+            trackPoints.push([lat, lng]);
+            drawTrack();
         },
 
         clearTrack: function () {
-            if (trackLine) {
-                map.removeLayer(trackLine);
-                map.removeLayer(trackUnder);
-                trackLine = null;
-                trackUnder = null;
-            }
+            trackPoints = [];
+            drawTrack();
         }
     };
 

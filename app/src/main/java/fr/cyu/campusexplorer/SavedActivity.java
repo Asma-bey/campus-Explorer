@@ -51,12 +51,17 @@ public class SavedActivity extends BaseActivity {
         findViewById(R.id.active_session).setVisibility(TrackingState.isRunning() ? View.VISIBLE : View.GONE);
     }
 
+    /** on ferme la connexion SQLite ouverte par l'ecran : liberer les ressources */
     @Override
     protected void onDestroy() {
         sessionDb.close();
         super.onDestroy();
     }
 
+    /**
+     * Reconstruit la liste des lieux enregistres : on vide le conteneur, puis on gonfle un
+     * item_saved_place.xml par lieu (une liste courte : un LinearLayout suffit, sans RecyclerView).
+     */
     private void showSavedPlaces() {
         List<Place> places = Places.byIds(savedPlaces.ids());
         LinearLayout list = findViewById(R.id.saved_list);
@@ -95,6 +100,7 @@ public class SavedActivity extends BaseActivity {
         }
     }
 
+    /** Les 5 derniers parcours lus dans SQLite : date, duree "min:s" et distance en km. */
     private void showHistory() {
         List<SessionDb.Session> sessions = sessionDb.latest(5);
         LinearLayout list = findViewById(R.id.history_list);

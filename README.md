@@ -70,8 +70,21 @@ or inject JavaScript.
 - **Tracking** is done by `TrackingService`, started by the user with `startForegroundService`. It
   calls `startForeground` with type `FOREGROUND_SERVICE_TYPE_LOCATION`, shows an ongoing
   notification (chronometer, distance, STOP action), and receives GPS updates while the screen is
-  off or another app is open. Positions with an accuracy worse than 35 m are ignored so that they
-  do not inflate the distance.
+  off or another app is open.
+- **Live tracking, like a navigation app.** The service asks for one position per second. Every
+  position moves the blue dot (with an arrow in the walking direction), and the map follows the
+  user; dragging the map stops following, the location button resumes it. The line always ends at
+  the blue dot, and the distance on the panel changes with every position ("350 m", then
+  "1.25 km").
+- **Clean distance.** The service filters the positions before counting them:
+  - GPS first: a network position (Wi-Fi, cell towers) is used only when the GPS has been silent
+    for 10 s, because mixing both makes the line zigzag;
+  - positions with an accuracy worse than 35 m are ignored;
+  - a point is added only when the user has moved more than 5 m, or more than the accuracy of the
+    positions, so the GPS jitter of someone standing still does not add metres;
+  - a jump faster than 50 m/s is a GPS error, not a walk, and is ignored.
+- During a session, the screen's own location listener steps aside: only the service places the
+  blue dot, so two sources never disagree.
 - When the session stops (from the map or from the notification), the service saves the summary in
   SQLite, removes the location updates, removes the notification and stops itself. It never runs
   without an active session (`START_NOT_STICKY`).
@@ -105,8 +118,18 @@ Text sizes are about 1.3 times those of the prototype, which was drawn small; An
 at least 11sp for readable text. The OpenStreetMap tiles get a CSS filter to look closer to the
 muted map of the prototype.
 
+The launch screen (yellow background, black pin of the icon) uses the `core-splashscreen`
+library: `MainActivity` calls `installSplashScreen()` before `super.onCreate`, and the theme
+`Theme.CampusExplorer.Starting` switches to the home theme afterwards. The library shows the same
+screen from Android 8 to Android 16, whereas the system splash screen only exists from Android 12.
+It stays at least 0.7 s at launch so that it can be seen.
+
 The places' coordinates come from OpenStreetMap (Nominatim and Overpass, November 2026). The four
-places of the prototype come first; three more places complete the map.
+places of the prototype come first, then the other CY sites in Cergy-Pontoise (Saint-Martin,
+Bernard Hirsch, Neuville, CY Tech) and in Île-de-France (Saint-Germain-en-Laye, Versailles,
+Argenteuil, Gennevilliers, Sarcelles). The overview frames the Cergy-Pontoise sites; the search
+frames whatever it finds ("Versailles", "IUT"). It reads the name and the address and ignores
+accents ("chenes" finds the Chênes site).
 
 ## Files
 

@@ -29,4 +29,5 @@ dependencies {
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.webkit)
+    implementation(libs.splashscreen)
 }
